@@ -1,3 +1,5 @@
+// src/components/DemoControls.tsx
+
 import { motion } from 'framer-motion';
 import {
   Bug,

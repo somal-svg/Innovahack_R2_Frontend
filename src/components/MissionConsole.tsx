@@ -1,6 +1,8 @@
+
+
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Send, Mic, Sparkles, type LucideIcon } from 'lucide-react';
+import { Send, Mic, Sparkles } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 import { formatINR } from '@/utils/format';
 import type { ChatMessage } from '@/types';
@@ -12,51 +14,100 @@ const SUGGESTED_PROMPTS = [
   'Provision Database Cluster',
 ];
 
-const MERCHANT_MAP: Record<string, { merchant: string; budget: number }> = {
-  aws: { merchant: 'AWS India', budget: 45000 },
-  server: { merchant: 'AWS India', budget: 45000 },
-  github: { merchant: 'GitHub', budget: 1800 },
-  subscription: { merchant: 'GitHub', budget: 1800 },
-  flight: { merchant: 'IndiGo', budget: 22000 },
-  book: { merchant: 'IndiGo', budget: 22000 },
-  database: { merchant: 'AWS India', budget: 65000 },
-  cluster: { merchant: 'AWS India', budget: 65000 },
-  stripe: { merchant: 'Stripe India', budget: 12000 },
-};
-
-function parsePrompt(text: string): { name: string; merchant: string; budget: number } {
+// Local parser - extracts merchant and budget from text
+function extractMissionDetails(text: string): { name: string; merchant: string; budget: number } {
   const lower = text.toLowerCase();
-  for (const key of Object.keys(MERCHANT_MAP)) {
+  
+  // Merchant mapping
+  const merchantMap: Record<string, { merchant: string; defaultBudget: number }> = {
+    aws: { merchant: 'AWS India', defaultBudget: 45000 },
+    server: { merchant: 'AWS India', defaultBudget: 45000 },
+    github: { merchant: 'GitHub', defaultBudget: 1800 },
+    subscription: { merchant: 'GitHub', defaultBudget: 1800 },
+    flight: { merchant: 'IndiGo', defaultBudget: 22000 },
+    book: { merchant: 'IndiGo', defaultBudget: 22000 },
+    database: { merchant: 'AWS India', defaultBudget: 65000 },
+    cluster: { merchant: 'AWS India', defaultBudget: 65000 },
+    stripe: { merchant: 'Stripe India', defaultBudget: 12000 },
+  };
+
+  let merchant = 'Unknown Merchant';
+  let budget = 15000;
+
+  // Find matching merchant
+  for (const key of Object.keys(merchantMap)) {
     if (lower.includes(key)) {
-      return {
-        name: text,
-        merchant: MERCHANT_MAP[key].merchant,
-        budget: MERCHANT_MAP[key].budget,
-      };
+      merchant = merchantMap[key].merchant;
+      budget = merchantMap[key].defaultBudget;
+      break;
     }
   }
-  return { name: text, merchant: 'Unknown Merchant', budget: 15000 };
+
+  // Try to extract a number from the text (e.g., "₹50,000")
+  const numberMatch = text.match(/(?:₹|Rs\.?\s*|\$)?\s*([\d,]+)/);
+  if (numberMatch) {
+    const num = parseInt(numberMatch[1].replace(/,/g, ''), 10);
+    if (!isNaN(num) && num > 0) {
+      budget = num;
+    }
+  }
+
+  return {
+    name: text.trim(),
+    merchant,
+    budget,
+  };
 }
 
 export function MissionConsole() {
-  const { state } = useAegis();
-  const { addChat, createMission } = useOrchestrator();
+  const { state, dispatch } = useAegis();
+  const { createMission } = useOrchestrator();
   const [input, setInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [state.chat]);
 
+  // Helper function to add chat messages
+  const addChat = (role: 'user' | 'aegis', text: string) => {
+    dispatch({
+      type: 'ADD_CHAT',
+      payload: {
+        role,
+        text,
+        timestamp: Date.now(),
+      },
+    });
+  };
+
   const handleSend = async (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || isProcessing) return;
+    
+    setIsProcessing(true);
     addChat('user', text);
     setInput('');
-    const parsed = parsePrompt(text);
-    await new Promise((r) => setTimeout(r, 500));
-    addChat('aegis', `Acknowledged. Provisioning a Mission Wallet for "${parsed.name}" — merchant: ${parsed.merchant}, budget: ${formatINR(parsed.budget)}.`);
-    await new Promise((r) => setTimeout(r, 800));
-    await createMission(parsed.name, parsed.merchant, parsed.budget);
+    
+    try {
+      // Show thinking state
+      addChat('aegis', '🔄 Processing your request...');
+      
+      // Extract mission details locally (no backend call)
+      const { name, merchant, budget } = extractMissionDetails(text);
+      
+      // Add the acknowledgment
+      addChat('aegis', `✅ Acknowledged. Provisioning a Mission Wallet for "${name}" — merchant: ${merchant}, budget: ${formatINR(budget)}.`);
+      
+      // Create the mission via the backend API
+      await createMission(name, merchant, budget);
+      
+    } catch (error: any) {
+      console.error('Failed to process mission:', error);
+      addChat('aegis', `❌ Error: ${error.message || 'Failed to create mission. Please try again.'}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -89,7 +140,8 @@ export function MissionConsole() {
           <button
             key={p}
             onClick={() => handleSend(p)}
-            className="rounded-full border border-gold/20 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-ink-dim transition-all hover:border-gold/40 hover:text-white hover:shadow-gold-sm"
+            disabled={isProcessing}
+            className="rounded-full border border-gold/20 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-ink-dim transition-all hover:border-gold/40 hover:text-white hover:shadow-gold-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {p}
           </button>
@@ -109,8 +161,9 @@ export function MissionConsole() {
               }
             }}
             rows={1}
-            placeholder="Issue a mission instruction…"
-            className="flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] text-white placeholder:text-ink-faint focus:outline-none"
+            placeholder={isProcessing ? "Processing..." : "Issue a mission instruction…"}
+            disabled={isProcessing}
+            className="flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] text-white placeholder:text-ink-faint focus:outline-none disabled:opacity-50"
             style={{ maxHeight: 100 }}
           />
           <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-dim transition-colors hover:bg-white/5 hover:text-white">
@@ -118,7 +171,7 @@ export function MissionConsole() {
           </button>
           <button
             onClick={() => handleSend(input)}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isProcessing}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold text-bg transition-all hover:shadow-gold disabled:opacity-30 disabled:hover:shadow-none"
           >
             <Send className="h-4 w-4" strokeWidth={2.5} />

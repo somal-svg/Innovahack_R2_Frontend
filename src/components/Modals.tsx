@@ -1,6 +1,8 @@
+// src/components/Modals.tsx
+
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Check, Shield, ScrollText, Clock } from 'lucide-react';
-import { useAegis } from '@/orchestrator';
+import { useAegis, useOrchestrator } from '@/orchestrator';
 
 interface Props {
   open: 'policies' | 'audit' | null;
@@ -43,7 +45,17 @@ export function Modals({ open, onClose }: Props) {
 }
 
 function PoliciesContent() {
-  const { state, dispatch } = useAegis();
+  const { state } = useAegis();
+  const { togglePolicy } = useOrchestrator();
+
+  const handleToggle = async (policyId: string) => {
+    try {
+      await togglePolicy(policyId);
+    } catch (error) {
+      console.error('Failed to toggle policy:', error);
+    }
+  };
+
   return (
     <div className="flex max-h-[80vh] flex-col">
       <div className="flex items-center gap-2.5 border-b border-gold/15 px-6 py-4">
@@ -77,7 +89,7 @@ function PoliciesContent() {
                 </code>
               </div>
               <button
-                onClick={() => dispatch({ type: 'TOGGLE_POLICY', id: policy.id })}
+                onClick={() => handleToggle(policy.id)}
                 className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
                   policy.enabled ? 'bg-success/40' : 'bg-white/10'
                 }`}

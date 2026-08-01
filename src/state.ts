@@ -1,3 +1,5 @@
+
+
 import type {
   AegisState,
   ShieldId,
@@ -10,6 +12,7 @@ import type {
   MissionStatus,
   BankAccount,
   EnterpriseProfile,
+  ChatMessage,
 } from '@/types';
 
 let idCounter = 0;
@@ -166,23 +169,21 @@ export function initialState(): AegisState {
 }
 
 export type Action =
+  | { type: 'INIT_STATE'; payload: AegisState }
   | { type: 'RESET' }
-  | { type: 'ADD_LOG'; message: string; severity: LogSeverity }
-  | { type: 'ADD_CHAT'; role: 'user' | 'aegis'; text: string }
-  | { type: 'SET_SHIELD'; shield: ShieldId; status: ShieldState['status'] }
-  | { type: 'SET_SHIELDS'; status: ShieldState['status'] }
-  | { type: 'CREATE_MISSION'; mission: Mission }
-  | { type: 'UPDATE_MISSION'; patch: Partial<Mission> }
-  | { type: 'CLEAR_MISSION' }
-  | { type: 'SET_WALLET_STATUS'; status: AegisState['walletStatus'] }
-  | { type: 'SET_TRUST'; value: number }
-  | { type: 'ADJUST_TRUST'; delta: number }
-  | { type: 'INC_ATTACK'; blocked: boolean }
-  | { type: 'ADD_AUDIT'; entry: Omit<AuditEntry, 'id' | 'timestamp' | 'hash'> }
-  | { type: 'TOGGLE_POLICY'; id: string }
-  | { type: 'SET_MISSION_STATUS'; status: MissionStatus }
-  | { type: 'ALLOCATE_FUNDS'; amount: number }
-  | { type: 'RELEASE_FUNDS'; amount: number };
+  | { type: 'ADD_LOG'; payload: { message: string; severity: LogSeverity; timestamp: number } }
+  | { type: 'ADD_CHAT'; payload: { role: 'user' | 'aegis'; text: string; timestamp: number } }
+  | { type: 'UPDATE_SHIELD'; payload: { id: ShieldId; status: ShieldState['status']; lastCheck: string } }
+  | { type: 'SET_MISSION'; payload: Mission | null }
+  | { type: 'SET_WALLET_STATUS'; payload: AegisState['walletStatus'] }
+  | { type: 'SET_TRUST'; payload: number }
+  | { type: 'ADD_AUDIT'; payload: AuditEntry }
+  | { type: 'UPDATE_ATTACK_STATS'; payload: { attackCount: number; blockedCount: number } }
+  | { type: 'UPDATE_POLICIES'; payload: Policy[] }
+  | { type: 'UPDATE_BALANCES'; payload: { reserveBalance: number; allocatedBalance: number } }
+  | { type: 'UPDATE_PROFILE'; payload: EnterpriseProfile }
+  | { type: 'UPDATE_MISSION'; payload: Partial<Mission> }
+  | { type: 'CLEAR_MISSION' };
 
 function hash(): string {
   const chars = '0123456789abcdef';
@@ -193,142 +194,93 @@ function hash(): string {
 
 export function reducer(state: AegisState, action: Action): AegisState {
   switch (action.type) {
+    case 'INIT_STATE':
+      return { ...action.payload };
+
     case 'RESET':
       return initialState();
 
     case 'ADD_LOG': {
       const log: TerminalLog = {
         id: uid('log'),
-        message: action.message,
-        severity: action.severity,
-        timestamp: Date.now(),
+        message: action.payload.message,
+        severity: action.payload.severity,
+        timestamp: action.payload.timestamp || Date.now(),
       };
       return { ...state, logs: [...state.logs, log].slice(-200) };
     }
 
     case 'ADD_CHAT': {
-      const msg = {
+      const msg: ChatMessage = {
         id: uid('msg'),
-        role: action.role,
-        text: action.text,
-        timestamp: Date.now(),
+        role: action.payload.role,
+        text: action.payload.text,
+        timestamp: action.payload.timestamp || Date.now(),
       };
       return { ...state, chat: [...state.chat, msg] };
     }
 
-    case 'SET_SHIELD':
+    case 'UPDATE_SHIELD': {
+      const { id, status, lastCheck } = action.payload;
       return {
         ...state,
         shields: {
           ...state.shields,
-          [action.shield]: {
-            ...state.shields[action.shield],
-            status: action.status,
-            lastCheck:
-              action.status === 'success' || action.status === 'failure'
-                ? new Date().toLocaleTimeString('en-US', { hour12: false })
-                : state.shields[action.shield].lastCheck,
+          [id]: {
+            ...state.shields[id],
+            status,
+            lastCheck: lastCheck || state.shields[id].lastCheck,
           },
         },
       };
-
-    case 'SET_SHIELDS': {
-      const shields = { ...state.shields };
-      for (const id of SHIELD_ORDER) {
-        shields[id] = {
-          ...shields[id],
-          status: action.status,
-          lastCheck:
-            action.status === 'success' || action.status === 'failure'
-              ? new Date().toLocaleTimeString('en-US', { hour12: false })
-              : shields[id].lastCheck,
-        };
-      }
-      return { ...state, shields };
     }
 
-    case 'CREATE_MISSION':
+    case 'SET_MISSION':
       return {
         ...state,
-        mission: action.mission,
-        walletStatus: 'active',
-        allocatedBalance: state.allocatedBalance + action.mission.budget,
-        reserveBalance: Math.max(0, state.reserveBalance - action.mission.budget),
+        mission: action.payload,
+        walletStatus: action.payload ? 'active' : 'empty',
       };
+
+    case 'SET_WALLET_STATUS':
+      return { ...state, walletStatus: action.payload };
+
+    case 'SET_TRUST':
+      return { ...state, trustScore: Math.max(0, Math.min(100, action.payload)) };
+
+    case 'ADD_AUDIT':
+      return {
+        ...state,
+        audit: [action.payload, ...state.audit].slice(0, 100),
+      };
+
+    case 'UPDATE_ATTACK_STATS':
+      return {
+        ...state,
+        attackCount: action.payload.attackCount,
+        blockedCount: action.payload.blockedCount,
+      };
+
+    case 'UPDATE_POLICIES':
+      return { ...state, policies: action.payload };
+
+    case 'UPDATE_BALANCES':
+      return {
+        ...state,
+        reserveBalance: action.payload.reserveBalance,
+        allocatedBalance: action.payload.allocatedBalance,
+      };
+
+    case 'UPDATE_PROFILE':
+      return { ...state, profile: action.payload };
 
     case 'UPDATE_MISSION':
       return state.mission
-        ? { ...state, mission: { ...state.mission, ...action.patch } }
+        ? { ...state, mission: { ...state.mission, ...action.payload } }
         : state;
 
-    case 'CLEAR_MISSION': {
-      const released = state.mission ? state.mission.budget - state.mission.spent : 0;
-      return {
-        ...state,
-        mission: null,
-        walletStatus: 'empty',
-        allocatedBalance: Math.max(0, state.allocatedBalance - released),
-        reserveBalance: state.reserveBalance + released,
-      };
-    }
-
-    case 'SET_MISSION_STATUS':
-      return state.mission
-        ? { ...state, mission: { ...state.mission, status: action.status } }
-        : state;
-
-    case 'SET_WALLET_STATUS':
-      return { ...state, walletStatus: action.status };
-
-    case 'SET_TRUST':
-      return { ...state, trustScore: Math.max(0, Math.min(100, action.value)) };
-
-    case 'ADJUST_TRUST':
-      return {
-        ...state,
-        trustScore: Math.max(0, Math.min(100, state.trustScore + action.delta)),
-      };
-
-    case 'INC_ATTACK':
-      return {
-        ...state,
-        attackCount: state.attackCount + 1,
-        blockedCount: action.blocked
-          ? state.blockedCount + 1
-          : state.blockedCount,
-      };
-
-    case 'ADD_AUDIT': {
-      const entry: AuditEntry = {
-        ...action.entry,
-        id: uid('audit'),
-        timestamp: Date.now(),
-        hash: hash(),
-      };
-      return { ...state, audit: [entry, ...state.audit].slice(0, 100) };
-    }
-
-    case 'TOGGLE_POLICY':
-      return {
-        ...state,
-        policies: state.policies.map((p) =>
-          p.id === action.id ? { ...p, enabled: !p.enabled } : p
-        ),
-      };
-
-    case 'ALLOCATE_FUNDS':
-      return {
-        ...state,
-        allocatedBalance: state.allocatedBalance + action.amount,
-        reserveBalance: Math.max(0, state.reserveBalance - action.amount),
-      };
-
-    case 'RELEASE_FUNDS':
-      return {
-        ...state,
-        allocatedBalance: Math.max(0, state.allocatedBalance - action.amount),
-        reserveBalance: state.reserveBalance + action.amount,
-      };
+    case 'CLEAR_MISSION':
+      return { ...state, mission: null, walletStatus: 'empty' };
 
     default:
       return state;

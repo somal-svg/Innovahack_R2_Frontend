@@ -1,3 +1,6 @@
+// src/components/MissionWallet.tsx
+
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Rocket,
@@ -23,6 +26,32 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
   const mission = state.mission;
   const frozen = state.walletStatus === 'frozen';
   const nuked = state.walletStatus === 'nuked';
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleExecute = async () => {
+    if (isExecuting) return;
+    setIsExecuting(true);
+    try {
+      await executeMission();
+    } catch (error) {
+      console.error('Execution failed:', error);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (isCancelling) return;
+    setIsCancelling(true);
+    try {
+      await cancelMission();
+    } catch (error) {
+      console.error('Cancel failed:', error);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -166,10 +195,10 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
               <div className="mt-4 grid grid-cols-2 gap-2.5">
                 <WalletButton
                   icon={Play}
-                  label="Execute Mission"
+                  label={isExecuting ? "Executing..." : "Execute Mission"}
                   variant="primary"
-                  onClick={executeMission}
-                  disabled={frozen || mission.status === 'completed' || mission.status === 'failed'}
+                  onClick={handleExecute}
+                  disabled={frozen || isExecuting || mission.status === 'completed' || mission.status === 'failed'}
                 />
                 <WalletButton
                   icon={Eye}
@@ -179,10 +208,10 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
                 />
                 <WalletButton
                   icon={Ban}
-                  label="Cancel Mission"
+                  label={isCancelling ? "Cancelling..." : "Cancel Mission"}
                   variant="danger"
-                  onClick={cancelMission}
-                  disabled={frozen}
+                  onClick={handleCancel}
+                  disabled={frozen || isCancelling}
                 />
               </div>
             </motion.div>
