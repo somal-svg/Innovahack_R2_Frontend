@@ -1,5 +1,3 @@
-// src/components/Modals.tsx
-
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Check, Shield, ScrollText, Clock } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
@@ -47,6 +45,7 @@ export function Modals({ open, onClose }: Props) {
 function PoliciesContent() {
   const { state } = useAegis();
   const { togglePolicy } = useOrchestrator();
+  const policies = state?.policies || [];
 
   const handleToggle = async (policyId: string) => {
     try {
@@ -68,7 +67,7 @@ function PoliciesContent() {
         </div>
       </div>
       <div className="flex-1 space-y-2.5 overflow-y-auto p-6">
-        {state.policies.map((policy) => (
+        {policies.map((policy) => (
           <div
             key={policy.id}
             className="rounded-xl border border-gold/10 bg-bg-card/50 p-4"
@@ -89,7 +88,7 @@ function PoliciesContent() {
                 </code>
               </div>
               <button
-                onClick={() => handleToggle(policy.id)}
+                onClick={() => void handleToggle(policy.id)}
                 className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
                   policy.enabled ? 'bg-success/40' : 'bg-white/10'
                 }`}
@@ -110,6 +109,7 @@ function PoliciesContent() {
 
 function AuditContent() {
   const { state } = useAegis();
+  const auditEntries = state?.audit || [];
   const resultConfig = {
     success: { color: 'text-success', bg: 'bg-success/10', label: 'SUCCESS' },
     blocked: { color: 'text-error', bg: 'bg-error/10', label: 'BLOCKED' },
@@ -127,14 +127,14 @@ function AuditContent() {
         </div>
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto p-6">
-        {state.audit.length === 0 ? (
+        {auditEntries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <ScrollText className="h-8 w-8 text-ink-faint" strokeWidth={1.5} />
             <p className="mt-3 text-[12px] text-ink-faint">No audit events recorded yet.</p>
           </div>
         ) : (
-          state.audit.map((entry) => {
-            const c = resultConfig[entry.result];
+          auditEntries.map((entry) => {
+            const c = resultConfig[entry.result] || resultConfig.success;
             return (
               <div
                 key={entry.id}
@@ -157,7 +157,7 @@ function AuditContent() {
                   </div>
                 </div>
                 <code className="hidden shrink-0 font-mono text-[9.5px] text-ink-faint sm:block">
-                  {entry.hash.slice(0, 18)}…
+                  {entry.hash?.slice(0, 18)}…
                 </code>
               </div>
             );

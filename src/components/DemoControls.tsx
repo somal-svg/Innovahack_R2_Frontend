@@ -1,5 +1,3 @@
-// src/components/DemoControls.tsx
-
 import { motion } from 'framer-motion';
 import {
   Bug,
@@ -30,21 +28,23 @@ export function DemoControls({ onAuditTrail }: { onAuditTrail: () => void }) {
     launchSpamAttack,
     rotateSessionKey,
     freezeWallet,
+    unfreezeWallet,
     nukeWallet,
     cancelPendingTx,
     resetDemo,
   } = useOrchestrator();
 
   const buttons: DemoButton[] = [
-    { label: 'Simulate Prompt Injection', icon: Bug, onClick: simulatePromptInjection, variant: 'attack' },
-    { label: 'Simulate Stolen Key', icon: KeyRound, onClick: simulateStolenKey, variant: 'attack' },
-    { label: 'Launch Spam Attack', icon: Flame, onClick: launchSpamAttack, variant: 'attack' },
-    { label: 'Rotate Session Key', icon: RefreshCw, onClick: rotateSessionKey, variant: 'security' },
-    { label: 'Freeze Wallet', icon: Snowflake, onClick: freezeWallet, variant: 'security' },
-    { label: 'Nuke Wallet', icon: Bomb, onClick: nukeWallet, variant: 'danger' },
-    { label: 'Cancel Pending Transaction', icon: XCircle, onClick: cancelPendingTx, variant: 'security' },
+    { label: 'Simulate Prompt Injection', icon: Bug, onClick: () => void simulatePromptInjection(), variant: 'attack' },
+    { label: 'Simulate Stolen Key', icon: KeyRound, onClick: () => void simulateStolenKey(), variant: 'attack' },
+    { label: 'Launch Spam Attack', icon: Flame, onClick: () => void launchSpamAttack(), variant: 'attack' },
+    { label: 'Rotate Session Key', icon: RefreshCw, onClick: () => void rotateSessionKey(), variant: 'security' },
+    { label: 'Freeze Wallet', icon: Snowflake, onClick: () => void freezeWallet(), variant: 'security' },
+    { label: 'Unfreeze Wallet', icon: Snowflake, onClick: () => void unfreezeWallet(), variant: 'security' },
+    { label: 'Nuke Wallet', icon: Bomb, onClick: () => void nukeWallet(), variant: 'danger' },
+    { label: 'Cancel Pending Transaction', icon: XCircle, onClick: () => void cancelPendingTx(), variant: 'security' },
     { label: 'Audit Trail', icon: ScrollText, onClick: onAuditTrail, variant: 'neutral' },
-    { label: 'Reset Demo', icon: RotateCcw, onClick: resetDemo, variant: 'neutral' },
+    { label: 'Reset Demo', icon: RotateCcw, onClick: () => void resetDemo(), variant: 'neutral' },
   ];
 
   const variantStyles = {

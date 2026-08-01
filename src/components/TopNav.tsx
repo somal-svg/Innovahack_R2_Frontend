@@ -41,7 +41,6 @@ export function TopNav({ active, onNavigate, trustScore, walletStatus }: Props) 
   return (
     <header className="sticky top-0 z-50 h-16 border-b border-gold/20 bg-bg-secondary/80 backdrop-blur-xl">
       <div className="mx-auto flex h-full max-w-[1800px] items-center justify-between px-6">
-        {/* Left — Logo */}
         <div className="flex items-center gap-3">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -61,7 +60,6 @@ export function TopNav({ active, onNavigate, trustScore, walletStatus }: Props) 
           </div>
         </div>
 
-        {/* Center — Tabs */}
         <nav className="flex items-center gap-1">
           {TABS.map((tab) => {
             const Icon = tab.icon;
@@ -88,7 +86,6 @@ export function TopNav({ active, onNavigate, trustScore, walletStatus }: Props) 
           })}
         </nav>
 
-        {/* Right — Status */}
         <div className="flex items-center gap-4">
           <div className="hidden items-center gap-2 lg:flex">
             <div className="flex items-center gap-2 rounded-full border border-gold/20 bg-bg-card/60 px-3 py-1.5">

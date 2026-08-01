@@ -80,14 +80,14 @@ export const DEFAULT_POLICIES: Policy[] = [
     id: 'p4',
     name: 'Prompt Injection Defense',
     description: 'Blocks instructions that attempt to override policy.',
-    enabled: false, 
+    enabled: false,
     rule: 'intent.signature == verified',
   },
   {
     id: 'p5',
     name: 'Rate Limit',
     description: 'Maximum 10 transactions per mission per minute.',
-    enabled: false,  
+    enabled: false,
     rule: 'tx.rate <= 10/min',
   },
 ];
@@ -169,11 +169,11 @@ export function initialState(): AegisState {
 }
 
 export type Action =
-  | { type: 'INIT_STATE'; payload: AegisState }
+  | { type: 'INIT_STATE'; payload: Partial<AegisState> }
   | { type: 'RESET' }
-  | { type: 'ADD_LOG'; payload: { message: string; severity: LogSeverity; timestamp: number } }
-  | { type: 'ADD_CHAT'; payload: { role: 'user' | 'aegis'; text: string; timestamp: number } }
-  | { type: 'UPDATE_SHIELD'; payload: { id: ShieldId; status: ShieldState['status']; lastCheck: string } }
+  | { type: 'ADD_LOG'; payload: { message: string; severity: LogSeverity; timestamp?: number } }
+  | { type: 'ADD_CHAT'; payload: { role: 'user' | 'aegis'; text: string; timestamp?: number } }
+  | { type: 'UPDATE_SHIELD'; payload: { id: ShieldId; status: ShieldState['status']; lastCheck?: string } }
   | { type: 'SET_MISSION'; payload: Mission | null }
   | { type: 'SET_WALLET_STATUS'; payload: AegisState['walletStatus'] }
   | { type: 'SET_TRUST'; payload: number }
@@ -189,41 +189,53 @@ export type Action =
 export function reducer(state: AegisState, action: Action): AegisState {
   switch (action.type) {
     case 'INIT_STATE':
-      return { ...action.payload };
+      return {
+        ...initialState(),
+        ...action.payload,
+        logs: Array.isArray(action.payload?.logs) ? action.payload.logs : state.logs || [],
+        chat: Array.isArray(action.payload?.chat) ? action.payload.chat : state.chat || [],
+        audit: Array.isArray(action.payload?.audit) ? action.payload.audit : state.audit || [],
+        shields: action.payload?.shields || state.shields || makeShields(),
+        mission: action.payload?.mission !== undefined ? action.payload.mission : state.mission,
+        walletStatus: action.payload?.walletStatus || state.walletStatus || 'empty',
+      };
 
     case 'RESET':
       return initialState();
 
     case 'ADD_LOG': {
+      const currentLogs = Array.isArray(state.logs) ? state.logs : [];
       const log: TerminalLog = {
         id: uid('log'),
         message: action.payload.message,
         severity: action.payload.severity,
         timestamp: action.payload.timestamp || Date.now(),
       };
-      return { ...state, logs: [...state.logs, log].slice(-200) };
+      return { ...state, logs: [...currentLogs, log].slice(-200) };
     }
 
     case 'ADD_CHAT': {
+      const currentChat = Array.isArray(state.chat) ? state.chat : [];
       const msg: ChatMessage = {
         id: uid('msg'),
         role: action.payload.role,
         text: action.payload.text,
         timestamp: action.payload.timestamp || Date.now(),
       };
-      return { ...state, chat: [...state.chat, msg] };
+      return { ...state, chat: [...currentChat, msg] };
     }
 
     case 'UPDATE_SHIELD': {
       const { id, status, lastCheck } = action.payload;
+      const shields = state.shields || makeShields();
       return {
         ...state,
         shields: {
-          ...state.shields,
+          ...shields,
           [id]: {
-            ...state.shields[id],
+            ...(shields[id] || { id, label: id, description: '', status: 'idle', lastCheck: '—' }),
             status,
-            lastCheck: lastCheck || state.shields[id].lastCheck,
+            lastCheck: lastCheck || shields[id]?.lastCheck || '—',
           },
         },
       };
@@ -242,11 +254,13 @@ export function reducer(state: AegisState, action: Action): AegisState {
     case 'SET_TRUST':
       return { ...state, trustScore: Math.max(0, Math.min(100, action.payload)) };
 
-    case 'ADD_AUDIT':
+    case 'ADD_AUDIT': {
+      const currentAudit = Array.isArray(state.audit) ? state.audit : [];
       return {
         ...state,
-        audit: [action.payload, ...state.audit].slice(0, 100),
+        audit: [action.payload, ...currentAudit].slice(0, 100),
       };
+    }
 
     case 'UPDATE_ATTACK_STATS':
       return {
@@ -283,5 +297,3 @@ export function reducer(state: AegisState, action: Action): AegisState {
       return state;
   }
 }
-
-export type Dispatch = React.Dispatch<Action>;

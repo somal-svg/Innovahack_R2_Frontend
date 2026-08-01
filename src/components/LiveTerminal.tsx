@@ -15,10 +15,11 @@ const SEVERITY_STYLES: Record<LogSeverity, { color: string; prefix: string }> = 
 export function LiveTerminal() {
   const { state } = useAegis();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const logs = state?.logs || [];
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [state.logs]);
+  }, [logs]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-gold/15 bg-bg/80 backdrop-blur-xl">
@@ -34,11 +35,11 @@ export function LiveTerminal() {
       </div>
       <div ref={scrollRef} className="flex-1 space-y-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed">
         <AnimatePresence initial={false}>
-          {state.logs.length === 0 && (
+          {logs.length === 0 && (
             <div className="text-ink-faint">Awaiting mission activity…</div>
           )}
-          {state.logs.map((log) => {
-            const s = SEVERITY_STYLES[log.severity];
+          {logs.map((log) => {
+            const s = SEVERITY_STYLES[log.severity] || SEVERITY_STYLES.info;
             return (
               <motion.div
                 key={log.id}

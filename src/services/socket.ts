@@ -1,20 +1,18 @@
 import { io, Socket } from 'socket.io-client';
 import { Dispatch } from 'react';
-import type { Action } from '../state'; // <-- Import the Action type to replace 'any'
+import type { Action } from '../state';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 let socket: Socket | null = null;
 
-// Changed Dispatch<any> to Dispatch<Action>
 export function initializeSocket(dispatch: Dispatch<Action>): Socket {
   if (socket) {
-    console.warn('Socket already initialized');
     return socket;
   }
 
   socket = io(BACKEND_URL, {
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
@@ -37,8 +35,6 @@ export function initializeSocket(dispatch: Dispatch<Action>): Socket {
   socket.on('balance_update', (data) => dispatch({ type: 'UPDATE_BALANCES', payload: data }));
   socket.on('profile_update', (profile) => dispatch({ type: 'UPDATE_PROFILE', payload: profile }));
   socket.on('state_reset', (data) => dispatch({ type: 'INIT_STATE', payload: data }));
-  
-  // Real-Time Action Ticks
   socket.on('time_lock_update', (data) => dispatch({ type: 'UPDATE_TIMELOCK', payload: data.remaining }));
 
   return socket;
@@ -49,7 +45,7 @@ export function getSocket(): Socket | null {
 }
 
 export function disconnectSocket() {
-  if (socket) {
+  if (socket && socket.connected) {
     socket.disconnect();
     socket = null;
     console.log('🔌 Socket manually disconnected');

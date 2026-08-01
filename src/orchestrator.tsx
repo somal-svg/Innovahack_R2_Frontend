@@ -4,8 +4,6 @@ import { initializeSocket, disconnectSocket } from './services/socket';
 import * as api from './services/api';
 import type { AegisState } from './types';
 
-// ============ CONTEXT & PROVIDER ============
-
 type AegisContextType = {
   state: AegisState;
   dispatch: React.Dispatch<Action>;
@@ -38,12 +36,8 @@ export function useAegis() {
   return context;
 }
 
-// ============ ORCHESTRATOR HOOK ============
-
 export function useOrchestrator() {
   const { state, dispatch } = useAegis();
-
-  // ============ MISSION OPERATIONS ============
 
   const createMission = async (userPrompt: string) => {
     try {
@@ -77,6 +71,15 @@ export function useOrchestrator() {
       await api.freezeWallet();
     } catch (error) {
       console.error('Failed to freeze wallet:', error);
+      throw error;
+    }
+  };
+
+  const unfreezeWallet = async () => {
+    try {
+      await api.unfreezeWallet();
+    } catch (error) {
+      console.error('Failed to unfreeze wallet:', error);
       throw error;
     }
   };
@@ -126,8 +129,6 @@ export function useOrchestrator() {
     }
   };
 
-  // ============ ATTACK OPERATIONS ============
-
   const simulatePromptInjection = async () => {
     try {
       await api.simulatePromptInjection();
@@ -160,6 +161,7 @@ export function useOrchestrator() {
     executeMission,
     cancelMission,
     freezeWallet,
+    unfreezeWallet,
     nukeWallet,
     rotateSessionKey,
     cancelPendingTx,

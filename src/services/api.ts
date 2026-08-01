@@ -1,6 +1,5 @@
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
-// Helper function to handle responses
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -8,8 +7,6 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
   return response.json();
 }
-
-// ============ MISSION OPERATIONS ============
 
 export async function createMission(userPrompt: string) {
   const response = await fetch(`${API_BASE}/api/missions/create`, {
@@ -40,6 +37,15 @@ export async function cancelMission() {
 
 export async function freezeWallet() {
   const response = await fetch(`${API_BASE}/api/missions/freeze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  return handleResponse(response);
+}
+
+export async function unfreezeWallet() {
+  const response = await fetch(`${API_BASE}/api/missions/unfreeze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
@@ -91,8 +97,6 @@ export async function resetDemo() {
   });
   return handleResponse(response);
 }
-
-// ============ ATTACK OPERATIONS ============
 
 export async function simulatePromptInjection() {
   const response = await fetch(`${API_BASE}/api/attacks/prompt-injection`, {

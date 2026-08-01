@@ -69,14 +69,12 @@ function MissionsView({
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-      {/* Left — AI Mission Console */}
       <div className="lg:col-span-4 xl:col-span-3">
         <div className="h-[calc(100vh-7rem)] overflow-hidden rounded-2xl border border-gold/15 bg-bg-secondary/60 backdrop-blur-xl">
           <MissionConsole />
         </div>
       </div>
 
-      {/* Center — Mission Wallet + Terminal */}
       <div className="flex flex-col gap-4 lg:col-span-5 xl:col-span-6">
         <div className="flex-1 overflow-hidden rounded-2xl border border-gold/15 bg-bg-secondary/60 backdrop-blur-xl">
           <MissionWallet onViewPolicies={onViewPolicies} />
@@ -86,7 +84,6 @@ function MissionsView({
         </div>
       </div>
 
-      {/* Right — Security Engine + Demo Controls */}
       <div className="flex flex-col gap-4 lg:col-span-3">
         <div className="flex-1 overflow-hidden rounded-2xl border border-gold/15 bg-bg-secondary/60 backdrop-blur-xl">
           <SecurityEngine />

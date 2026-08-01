@@ -1,28 +1,56 @@
 import { motion } from 'framer-motion';
-import { CreditCard, Rocket, XCircle, ShieldAlert } from 'lucide-react';
+import { CreditCard, Rocket, XCircle, ShieldAlert, Snowflake, RefreshCw } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 import { formatINR } from '@/utils/format';
 
 export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }) {
   const { state } = useAegis();
-  const { executeMission, cancelMission, cancelPendingTx } = useOrchestrator();
+  const { executeMission, cancelMission, cancelPendingTx, unfreezeWallet, rotateSessionKey } = useOrchestrator();
 
-  if (!state.mission) {
+  if (!state.mission || state.walletStatus === 'nuked') {
     return (
       <div className="flex h-full flex-col items-center justify-center p-6 text-center opacity-60">
         <ShieldAlert className="h-12 w-12 text-ink-dim mb-4" strokeWidth={1} />
-        <p className="text-[14px] font-medium text-ink-dim">No active mission wallet.</p>
-        <p className="text-[11px] text-ink-faint mt-1">Issue a prompt to the AI to provision one.</p>
+        <p className="text-[14px] font-medium text-ink-dim">No active mission wallet (Purged / Nuked).</p>
+        <p className="text-[11px] text-ink-faint mt-1">Issue a prompt to the AI to provision a new one.</p>
       </div>
     );
   }
 
   const { mission, timeLockRemaining = 0 } = state;
   const isExecuting = mission.status === 'executing' || timeLockRemaining > 0;
-  const isFailed = ['failed', 'frozen', 'nuked'].includes(mission.status);
+  const isFrozen = state.walletStatus === 'frozen' || mission.status === 'frozen';
+  const isFailed = ['failed', 'nuked'].includes(mission.status);
 
   return (
-    <div className="flex h-full flex-col p-6 relative">
+    <div className="flex h-full flex-col p-6 relative overflow-hidden">
+      {/* Prominent Frosted Blur Overlay when Frozen */}
+      {isFrozen && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-bg/85 backdrop-blur-md p-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-error/10 border border-error/30 text-error mb-3 animate-pulse">
+            <Snowflake className="h-7 w-7" />
+          </div>
+          <h3 className="text-[16px] font-bold text-white uppercase tracking-wider">Wallet Frozen & Isolated</h3>
+          <p className="text-[11px] text-ink-dim max-w-sm mt-1 mb-6">
+            All transaction pipelines, session keys, and automated processes have been forcefully halted by emergency override.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => void unfreezeWallet()}
+              className="flex items-center gap-2 rounded-xl bg-success/20 border border-success/40 text-success px-4 py-2.5 text-[12px] font-bold hover:bg-success/30 transition-all"
+            >
+              <Snowflake className="h-4 w-4" /> Unfreeze Wallet
+            </button>
+            <button
+              onClick={() => void rotateSessionKey()}
+              className="flex items-center gap-2 rounded-xl bg-gold/20 border border-gold/40 text-gold px-4 py-2.5 text-[12px] font-bold hover:bg-gold/30 transition-all"
+            >
+              <RefreshCw className="h-4 w-4" /> Rotate Key
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between border-b border-gold/15 pb-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10">
@@ -30,7 +58,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
           </div>
           <div>
             <h2 className="text-[15px] font-bold text-white">{mission.name}</h2>
-            <div className="text-[11px] font-mono text-ink-dim">{mission.missionId}</div>
+            <div className="text-[11px] font-mono text-ink-dim">{mission.missionId} · Key: {mission.sessionKey?.slice(0, 10)}...</div>
           </div>
         </div>
         <StatusBadge status={mission.status} />
@@ -47,7 +75,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
           <div className="mt-6 rounded-xl border border-warning/30 bg-warning/5 p-4">
             <div className="flex justify-between text-[12px] font-bold text-warning mb-2">
                 <span className="flex items-center gap-1.5">
-                  <div className="h-2 w-2 rounded-full bg-warning animate-pulse" /> TIME LOCK ACTIVE
+                  <div className="h-2 w-2 rounded-full bg-warning animate-pulse" /> 1-MINUTE TIME LOCK ACTIVE
                 </span>
                 <span>{timeLockRemaining}s remaining to abort</span>
             </div>
@@ -55,7 +83,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
                 <motion.div 
                   className="h-full bg-warning"
                   initial={{ width: '100%' }}
-                  animate={{ width: `${(timeLockRemaining / 120) * 100}%` }}
+                  animate={{ width: `${(timeLockRemaining / 60) * 100}%` }}
                   transition={{ ease: 'linear' }}
                 />
             </div>
@@ -108,7 +136,7 @@ function StatusBadge({ status }: { status: string }) {
       executing: { bg: 'bg-warning/10', text: 'text-warning' },
       completed: { bg: 'bg-success/10', text: 'text-success' },
       failed: { bg: 'bg-error/10', text: 'text-error' },
-      frozen: { bg: 'bg-error/10', text: 'text-error' },
+      frozen: { bg: 'bg-error/10', text: 'text-error animate-pulse' },
       nuked: { bg: 'bg-error/10 text-error', text: 'text-error' },
     };
     const c = config[status] || config.idle;

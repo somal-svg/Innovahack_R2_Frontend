@@ -4,7 +4,6 @@ import { Send, Mic, Sparkles } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 import type { ChatMessage } from '@/types';
 
-// Updated buttons to include explicit, clear budgets and intent.
 const SUGGESTED_PROMPTS = [
   'Buy AWS Server for ₹45,000',
   'Renew GitHub Subscription at ₹1,800',
@@ -19,9 +18,11 @@ export function MissionConsole() {
   const [isProcessing, setIsProcessing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const chatMessages = state?.chat || [];
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [state.chat]);
+  }, [chatMessages]);
 
   const addChat = (role: 'user' | 'aegis', text: string) => {
     dispatch({
@@ -44,10 +45,8 @@ export function MissionConsole() {
     try {
       addChat('aegis', '🔄 Analyzing intent and provisioning Mission Wallet...');
       await createMission(text);
-    } catch (error) { // <-- REMOVED : any HERE
+    } catch (error) {
       console.error('Failed to process mission:', error);
-      
-      // Correct, strict-TypeScript way to get the error message
       const errorMessage = error instanceof Error ? error.message : 'Failed to create mission.';
       addChat('aegis', `❌ Error: ${errorMessage}`);
     } finally {
@@ -71,7 +70,7 @@ export function MissionConsole() {
 
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
         <AnimatePresence initial={false}>
-          {state.chat.map((msg: ChatMessage) => (
+          {chatMessages.map((msg: ChatMessage) => (
             <ChatBubble key={msg.id} message={msg} />
           ))}
         </AnimatePresence>

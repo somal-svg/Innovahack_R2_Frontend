@@ -31,6 +31,8 @@ const SHIELD_ORDER: ShieldId[] = [
 
 export function SecurityEngine() {
   const { state } = useAegis();
+  const shields = state?.shields || {};
+  const activeCount = Object.values(shields).filter((s) => s?.status === 'success').length;
 
   return (
     <div className="flex h-full flex-col">
@@ -48,22 +50,29 @@ export function SecurityEngine() {
         </div>
         <div className="flex items-center gap-1.5 rounded-full border border-gold/15 bg-bg-card/60 px-2.5 py-1">
           <span className="text-[10px] font-medium text-ink-dim">
-            {Object.values(state.shields).filter((s) => s.status === 'success').length}/6
+            {activeCount}/6
           </span>
         </div>
       </div>
 
       <div className="flex-1 space-y-2.5 overflow-y-auto p-4">
-        {SHIELD_ORDER.map((id, i) => (
-          <ShieldCard key={id} shield={state.shields[id]} index={i} />
-        ))}
+        {SHIELD_ORDER.map((id, i) => {
+          const fallbackShield: ShieldState = {
+            id,
+            label: id,
+            description: '',
+            status: 'idle',
+            lastCheck: '—',
+          };
+          return <ShieldCard key={id} shield={shields[id] || fallbackShield} index={i} />;
+        })}
       </div>
     </div>
   );
 }
 
 function ShieldCard({ shield, index }: { shield: ShieldState; index: number }) {
-  const Icon = SHIELD_ICONS[shield.id];
+  const Icon = SHIELD_ICONS[shield.id] || ShieldCheck;
   const statusConfig = {
     idle: {
       ring: 'border-gold/10',
@@ -102,7 +111,7 @@ function ShieldCard({ shield, index }: { shield: ShieldState; index: number }) {
       dot: 'bg-error animate-pulse',
     },
   };
-  const c = statusConfig[shield.status];
+  const c = statusConfig[shield.status] || statusConfig.idle;
 
   return (
     <motion.div
