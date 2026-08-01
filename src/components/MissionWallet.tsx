@@ -1,246 +1,223 @@
-// src/components/MissionWallet.tsx
-
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Rocket,
-  Shield,
-  Fingerprint,
   Building2,
-  Clock,
-  DollarSign,
-  CheckCircle2,
-  XCircle,
-  Snowflake,
-  Eye,
-  Play,
-  Ban,
+  Landmark,
+  Wallet,
+  TrendingUp,
+  Lock,
+  ArrowUpRight,
+  Rocket,
   type LucideIcon,
 } from 'lucide-react';
-import { useAegis, useOrchestrator } from '@/orchestrator';
-import { formatINR } from '@/utils/format';
+import { useAegis } from '@/orchestrator';
+import { formatINR, formatINRNumber } from '@/utils/format';
+import type { BankAccount } from '@/types';
 
-export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }) {
+export function MainWallet() {
   const { state } = useAegis();
-  const { executeMission, cancelMission } = useOrchestrator();
-  const mission = state.mission;
-  const frozen = state.walletStatus === 'frozen';
-  const nuked = state.walletStatus === 'nuked';
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
-
-  const handleExecute = async () => {
-    if (isExecuting) return;
-    setIsExecuting(true);
-    try {
-      await executeMission();
-    } catch (error) {
-      console.error('Execution failed:', error);
-    } finally {
-      setIsExecuting(false);
-    }
-  };
-
-  const handleCancel = async () => {
-    if (isCancelling) return;
-    setIsCancelling(true);
-    try {
-      await cancelMission();
-    } catch (error) {
-      console.error('Cancel failed:', error);
-    } finally {
-      setIsCancelling(false);
-    }
-  };
+  const { profile, bankAccounts, reserveBalance, allocatedBalance } = state;
+  const totalLiquid = reserveBalance + allocatedBalance;
+  const allocatedPct = totalLiquid > 0 ? (allocatedBalance / totalLiquid) * 100 : 0;
+  const dailyPct = profile.dailyOutflowCeiling > 0 ? (profile.dailySpent / profile.dailyOutflowCeiling) * 100 : 0;
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-gold/15 px-5 py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gold/10 ring-1 ring-gold/30">
-            <Fingerprint className="h-4 w-4 text-gold" strokeWidth={2} />
-          </div>
-          <div>
-            <h2 className="text-[13px] font-semibold tracking-wide text-white">
-              Mission Wallet
-            </h2>
-            <p className="text-[10px] text-ink-faint">Sovereign mission passport</p>
-          </div>
-        </div>
-        <StatusBadge status={state.walletStatus} />
-      </div>
-
-      <div className="relative flex-1 overflow-hidden p-5">
-        {!mission && !nuked && <EmptyState />}
-
-        {nuked && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex h-full flex-col items-center justify-center text-center"
-          >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-error/10 ring-1 ring-error/30">
-              <XCircle className="h-8 w-8 text-error" strokeWidth={2} />
-            </div>
-            <p className="mt-4 text-[14px] font-semibold text-white">Wallet Dissolved</p>
-            <p className="mt-1 text-[12px] text-ink-faint">All keys destroyed. Issue a new mission to provision a wallet.</p>
-          </motion.div>
-        )}
-
-        <AnimatePresence mode="wait">
-          {mission && !nuked && (
-            <motion.div
-              key={mission.id}
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.9, filter: 'blur(8px)' }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className={frozen ? 'pointer-events-none' : ''}
-            >
-              {frozen && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-bg/70 backdrop-blur-md"
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <Snowflake className="h-10 w-10 text-warning animate-pulse" strokeWidth={1.5} />
-                    <span className="text-[13px] font-semibold text-warning">WALLET FROZEN</span>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Passport Card */}
-              <div className="relative overflow-hidden rounded-2xl border border-gold/25 bg-gradient-to-br from-bg-card via-bg-secondary to-bg-card shadow-soft-lg">
-                <div className="absolute inset-0 grid-bg opacity-30" />
-                <div className="absolute inset-0 radial-gold" />
-
-                {/* Stamp */}
-                <AnimatePresence>
-                  {mission.status === 'completed' && (
-                    <motion.div
-                      initial={{ scale: 3, opacity: 0, rotate: -25 }}
-                      animate={{ scale: 1, opacity: 1, rotate: -15 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-                      className="absolute right-4 top-4 z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-success/60"
-                    >
-                      <div className="flex flex-col items-center">
-                        <CheckCircle2 className="h-7 w-7 text-success" strokeWidth={2.5} />
-                        <span className="mt-0.5 text-[7px] font-bold tracking-widest text-success">EXECUTED</span>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="relative z-[1] p-5">
-                  <div>
-                    <div className="text-[10px] font-medium tracking-[0.15em] text-gold/70">
-                      MISSION PASSPORT
-                    </div>
-                    <h3 className="mt-1 text-[20px] font-bold leading-tight text-white">
-                      {mission.name}
-                    </h3>
-                    <div className="mt-0.5 font-mono text-[11px] text-ink-faint">
-                      {mission.missionId}
-                    </div>
-                  </div>
-
-                  {/* Info grid */}
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <InfoTile icon={DollarSign} label="Budget" value={formatINR(mission.budget)} />
-                    <InfoTile
-                      icon={Rocket}
-                      label="Remaining"
-                      value={formatINR(mission.budget - mission.spent)}
-                      accent
-                    />
-                    <InfoTile icon={Building2} label="Merchant" value={mission.merchant} />
-                    <InfoTile
-                      icon={Clock}
-                      label="Expiry"
-                      value={new Date(mission.expiry).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    />
-                  </div>
-
-                  {/* Trust meter */}
-                  <div className="mt-4">
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-[10px] font-medium tracking-wide text-ink-dim">
-                        <Shield className="h-3 w-3 text-gold" strokeWidth={2.5} />
-                        TRUST METER
-                      </span>
-                      <span className="text-[12px] font-bold text-white">
-                        {mission.trustScore}
-                        <span className="text-ink-faint">/100</span>
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
-                      <motion.div
-                        className="h-full rounded-full bg-gradient-to-r from-gold to-soft-gold-text"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${mission.trustScore}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </div>
-                  </div>
+    <div className="mx-auto max-w-[1400px] space-y-4">
+      {/* Top row: Profile + Banks side by side */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Enterprise Profile + Authority Limits */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <SectionCard icon={Building2} title="Account Owner" subtitle="Enterprise profile & authority limits">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-gold/30 to-gold-dark/20 ring-1 ring-gold/30 text-[16px] font-bold text-white">
+                RS
+              </div>
+              <div className="flex-1">
+                <div className="text-[16px] font-bold text-white">{profile.owner}</div>
+                <div className="text-[12px] text-ink-dim">{profile.role}</div>
+                <div className="mt-1">
+                  <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
+                    {profile.enterprise}
+                  </span>
                 </div>
               </div>
+            </div>
 
-              {/* Action buttons */}
-              <div className="mt-4 grid grid-cols-2 gap-2.5">
-                <WalletButton
-                  icon={Play}
-                  label={isExecuting ? "Executing..." : "Execute Mission"}
-                  variant="primary"
-                  onClick={handleExecute}
-                  disabled={frozen || isExecuting || mission.status === 'completed' || mission.status === 'failed'}
-                />
-                <WalletButton
-                  icon={Eye}
-                  label="View Policies"
-                  variant="ghost"
-                  onClick={onViewPolicies}
-                />
-                <WalletButton
-                  icon={Ban}
-                  label={isCancelling ? "Cancelling..." : "Cancel Mission"}
-                  variant="danger"
-                  onClick={handleCancel}
-                  disabled={frozen || isCancelling}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {/* Authority Limits — only 2 */}
+            <div className="mt-5 space-y-3">
+              <LimitBar
+                icon={Lock}
+                label="Per-Mission Cap"
+                spentLabel="Highest recorded spend"
+                current={profile.highestSpend || 0}
+                limit={profile.perMissionCap}
+              />
+              <LimitBar
+                icon={TrendingUp}
+                label="Daily Outflow Ceiling"
+                spentLabel="Spent today"
+                current={profile.dailySpent}
+                limit={profile.dailyOutflowCeiling}
+              />
+            </div>
+          </SectionCard>
+        </motion.div>
+
+        {/* Connected Bank Accounts */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <SectionCard icon={Landmark} title="Connected Bank Accounts" subtitle="Corporate funding sources">
+            <div className="space-y-3">
+              {bankAccounts.length === 0 ? (
+                <div className="text-[12px] text-ink-faint py-2">Awaiting secure backend sync...</div>
+              ) : (
+                bankAccounts.map((acct, i) => (
+                  <BankRow key={acct.id} account={acct} index={i} />
+                ))
+              )}
+            </div>
+          </SectionCard>
+        </motion.div>
+      </div>
+
+      {/* Reserve Balances & Global Allocation */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+      >
+        <SectionCard icon={Wallet} title="Reserve Balances & Global Allocation" subtitle="Liquid capital vs. mission-allocated funds">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <BalanceTile
+              icon={TrendingUp}
+              label="Total Liquid Balance"
+              value={formatINR(totalLiquid)}
+              accent="gold"
+            />
+            <BalanceTile
+              icon={Wallet}
+              label="Available Reserve"
+              value={formatINR(reserveBalance)}
+              accent="success"
+            />
+            <BalanceTile
+              icon={Rocket}
+              label="Allocated to Missions"
+              value={formatINR(allocatedBalance)}
+              accent="warning"
+            />
+          </div>
+
+          {/* Allocation bar */}
+          <div className="mt-5">
+            <div className="mb-2 flex items-center justify-between text-[11px]">
+              <span className="font-medium text-ink-dim">Global Allocation</span>
+              <span className="font-semibold text-white">{Math.round(allocatedPct)}% allocated</span>
+            </div>
+            <div className="flex h-3 overflow-hidden rounded-full bg-white/5">
+              <motion.div
+                className="h-full bg-gradient-to-r from-warning/60 to-warning"
+                initial={{ width: 0 }}
+                animate={{ width: `${allocatedPct}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
+              <motion.div
+                className="h-full bg-gradient-to-r from-success/40 to-success"
+                initial={{ width: 0 }}
+                animate={{ width: `${100 - allocatedPct}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
+            </div>
+            <div className="mt-2 flex items-center gap-4 text-[10px] text-ink-faint">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-warning" /> Mission Wallets
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-success" /> Available Reserve
+              </span>
+            </div>
+          </div>
+        </SectionCard>
+      </motion.div>
+    </div>
+  );
+}
+
+function SectionCard({
+  icon: Icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="h-full rounded-2xl border border-gold/15 bg-bg-secondary/60 p-5 backdrop-blur-xl">
+      <div className="mb-4 flex items-center gap-2.5">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gold/10 ring-1 ring-gold/30">
+          <Icon className="h-4 w-4 text-gold" strokeWidth={2} />
+        </div>
+        <div>
+          <h3 className="text-[13px] font-semibold tracking-wide text-white">{title}</h3>
+          <p className="text-[10px] text-ink-faint">{subtitle}</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function LimitBar({
+  icon: Icon,
+  label,
+  spentLabel,
+  current,
+  limit,
+}: {
+  icon: LucideIcon;
+  label: string;
+  spentLabel: string;
+  current: number;
+  limit: number;
+}) {
+  const pct = limit > 0 ? (current / limit) * 100 : 0;
+  return (
+    <div className="rounded-xl border border-gold/10 bg-bg/40 p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-[11px] font-medium text-ink-dim">
+          <Icon className="h-3 w-3 text-gold" strokeWidth={2.5} />
+          {label}
+        </span>
+        <span className="text-[12px] font-semibold text-white">
+          {formatINR(current)} / {formatINR(limit)}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-white/5">
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-gold to-soft-gold-text"
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        />
+      </div>
+      <div className="mt-2 flex justify-between text-[10px] text-ink-faint">
+        <span>{spentLabel}</span>
+        <span>{Math.round(pct)}% utilized</span>
       </div>
     </div>
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="flex h-full flex-col items-center justify-center text-center">
-      <motion.div
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        className="flex h-16 w-16 items-center justify-center rounded-2xl border border-gold/20 bg-gold/5"
-      >
-        <Rocket className="h-7 w-7 text-gold/50" strokeWidth={1.5} />
-      </motion.div>
-      <p className="mt-5 text-[14px] font-semibold text-white">No Mission Wallet</p>
-      <p className="mt-1.5 max-w-[220px] text-[12px] leading-relaxed text-ink-faint">
-        Issue a mission instruction in the console to provision a sovereign wallet.
-      </p>
-    </div>
-  );
-}
-
-function InfoTile({
+function BalanceTile({
   icon: Icon,
   label,
   value,
@@ -249,63 +226,60 @@ function InfoTile({
   icon: LucideIcon;
   label: string;
   value: string;
-  accent?: boolean;
+  accent: 'gold' | 'success' | 'warning';
 }) {
+  const colors = {
+    gold: 'text-gold',
+    success: 'text-success',
+    warning: 'text-warning',
+  };
   return (
-    <div className="rounded-lg border border-gold/10 bg-bg/40 px-3 py-2.5">
-      <div className="flex items-center gap-1.5">
-        <Icon className={`h-3 w-3 ${accent ? 'text-success' : 'text-gold/60'}`} strokeWidth={2} />
-        <span className="text-[9px] font-medium tracking-wide text-ink-faint">{label}</span>
+    <div className="rounded-xl border border-gold/10 bg-bg/40 p-4">
+      <div className="flex items-center gap-2">
+        <Icon className={`h-3.5 w-3.5 ${colors[accent]}`} strokeWidth={2} />
+        <span className="text-[10px] font-medium tracking-wide text-ink-faint">{label}</span>
       </div>
-      <div className={`mt-1 text-[13px] font-semibold ${accent ? 'text-success' : 'text-white'}`}>
-        {value}
-      </div>
+      <div className={`mt-2 text-[20px] font-bold ${colors[accent]}`}>{value}</div>
     </div>
   );
 }
 
-function WalletButton({
-  icon: Icon,
-  label,
-  variant,
-  onClick,
-  disabled,
-}: {
-  icon: LucideIcon;
-  label: string;
-  variant: 'primary' | 'ghost' | 'danger';
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  const styles = {
-    primary: 'bg-gold text-bg hover:shadow-gold',
-    ghost: 'border border-gold/20 bg-white/[0.03] text-ink-dim hover:border-gold/40 hover:text-white',
-    danger: 'border border-error/20 bg-error/5 text-error/80 hover:bg-error/10 hover:text-error',
+function BankRow({ account, index }: { account: BankAccount; index: number }) {
+  const statusConfig = {
+    connected: { label: 'Connected', color: 'text-success', dot: 'bg-success' },
+    syncing: { label: 'Syncing', color: 'text-warning', dot: 'bg-warning animate-pulse' },
+    error: { label: 'Error', color: 'text-error', dot: 'bg-error' },
   };
+  const c = statusConfig[account.status];
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-30 ${styles[variant]}`}
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.3 }}
+      className="group flex items-center gap-3 rounded-xl border border-gold/15 bg-gradient-to-br from-bg-card to-bg-secondary p-4 transition-all hover:border-gold/30 hover:shadow-gold-sm"
     >
-      <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
-      {label}
-    </button>
-  );
-}
-
-function StatusBadge({ status }: { status: 'empty' | 'active' | 'frozen' | 'nuked' }) {
-  const config = {
-    empty: { label: 'Idle', color: 'text-ink-faint', dot: 'bg-ink-faint' },
-    active: { label: 'Active', color: 'text-success', dot: 'bg-success animate-pulse' },
-    frozen: { label: 'Frozen', color: 'text-warning', dot: 'bg-warning' },
-    nuked: { label: 'Destroyed', color: 'text-error', dot: 'bg-error' },
-  };
-  const c = config[status];
-  return (
-    <div className="flex items-center gap-1.5 rounded-full border border-gold/15 bg-bg-card/60 px-2.5 py-1">
-      <div className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
-      <span className={`text-[10px] font-medium ${c.color}`}>{c.label}</span>
-    </div>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gold/10">
+        <Landmark className="h-5 w-5 text-gold" strokeWidth={2} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-semibold text-white">{account.bank}</span>
+          <div className="flex items-center gap-1">
+            <div className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
+            <span className={`text-[9px] font-medium ${c.color}`}>{c.label}</span>
+          </div>
+        </div>
+        <div className="mt-0.5 text-[10px] text-ink-faint">{account.label} · {account.type}</div>
+        <div className="mt-0.5 font-mono text-[10px] text-ink-faint">
+          A/c ••••{account.last4} · IFSC {account.ifsc}
+        </div>
+      </div>
+      <div className="text-right">
+        <div className="text-[15px] font-bold text-white">{formatINR(account.balance)}</div>
+        <button className="mt-1 flex items-center justify-end gap-0.5 text-[10px] font-medium text-gold opacity-0 transition-opacity group-hover:opacity-100">
+          Manage <ArrowUpRight className="h-3 w-3" strokeWidth={2.5} />
+        </button>
+      </div>
+    </motion.div>
   );
 }

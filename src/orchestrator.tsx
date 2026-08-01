@@ -1,43 +1,3 @@
-import { useReducer, useEffect, createContext, useContext } from 'react';
-import { AegisState } from './types';
-import { initialState, reducer, type Dispatch, type Action } from './state';
-import * as api from './services/api';
-import { initializeSocket, disconnectSocket } from './services/socket';
-
-interface Ctx {
-  state: AegisState;
-  dispatch: Dispatch;
-}
-
-const AegisContext = createContext<Ctx | null>(null);
-
-export function AegisProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, initialState);
-
-  useEffect(() => {
-    // Initialize socket connection (removed 'const socket =' to clear the warning)
-    initializeSocket(dispatch);
-    
-    return () => {
-      disconnectSocket();
-    };
-  }, [dispatch]);
-
-  return (
-    <AegisContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AegisContext.Provider>
-  );
-}
-
-export function useAegis(): Ctx {
-  const ctx = useContext(AegisContext);
-  if (!ctx) throw new Error('useAegis must be used within AegisProvider');
-  return ctx;
-}
-
-// ============ ORCHESTRATOR HOOK ============
-
 export function useOrchestrator() {
   const { state, dispatch } = useAegis();
 
@@ -46,7 +6,7 @@ export function useOrchestrator() {
   const createMission = async (userPrompt: string) => {
     try {
       await api.createMission(userPrompt);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create mission:', error);
       throw error;
     }
@@ -55,7 +15,7 @@ export function useOrchestrator() {
   const executeMission = async () => {
     try {
       await api.executeMission();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to execute mission:', error);
       throw error;
     }
@@ -64,7 +24,7 @@ export function useOrchestrator() {
   const cancelMission = async () => {
     try {
       await api.cancelMission();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to cancel mission:', error);
       throw error;
     }
@@ -73,7 +33,7 @@ export function useOrchestrator() {
   const freezeWallet = async () => {
     try {
       await api.freezeWallet();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to freeze wallet:', error);
       throw error;
     }
@@ -82,7 +42,7 @@ export function useOrchestrator() {
   const nukeWallet = async () => {
     try {
       await api.nukeWallet();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to nuke wallet:', error);
       throw error;
     }
@@ -91,7 +51,7 @@ export function useOrchestrator() {
   const rotateSessionKey = async () => {
     try {
       await api.rotateSessionKey();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to rotate session key:', error);
       throw error;
     }
@@ -100,7 +60,7 @@ export function useOrchestrator() {
   const cancelPendingTx = async () => {
     try {
       await api.cancelPendingTx();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to cancel pending transaction:', error);
       throw error;
     }
@@ -109,7 +69,7 @@ export function useOrchestrator() {
   const togglePolicy = async (policyId: string) => {
     try {
       await api.togglePolicy(policyId);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to toggle policy:', error);
       throw error;
     }
@@ -118,7 +78,7 @@ export function useOrchestrator() {
   const resetDemo = async () => {
     try {
       await api.resetDemo();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to reset demo:', error);
       throw error;
     }
@@ -129,7 +89,7 @@ export function useOrchestrator() {
   const simulatePromptInjection = async () => {
     try {
       await api.simulatePromptInjection();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to simulate prompt injection:', error);
       throw error;
     }
@@ -138,7 +98,7 @@ export function useOrchestrator() {
   const simulateStolenKey = async () => {
     try {
       await api.simulateStolenKey();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to simulate stolen key:', error);
       throw error;
     }
@@ -147,7 +107,7 @@ export function useOrchestrator() {
   const launchSpamAttack = async () => {
     try {
       await api.launchSpamAttack();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to launch spam attack:', error);
       throw error;
     }

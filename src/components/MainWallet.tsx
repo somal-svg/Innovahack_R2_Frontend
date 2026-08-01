@@ -18,7 +18,7 @@ export function MainWallet() {
   const { profile, bankAccounts, reserveBalance, allocatedBalance } = state;
   const totalLiquid = reserveBalance + allocatedBalance;
   const allocatedPct = totalLiquid > 0 ? (allocatedBalance / totalLiquid) * 100 : 0;
-  const dailyPct = (profile.dailySpent / profile.dailyOutflowCeiling) * 100;
+  const dailyPct = profile.dailyOutflowCeiling > 0 ? (profile.dailySpent / profile.dailyOutflowCeiling) * 100 : 0;
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
@@ -51,8 +51,8 @@ export function MainWallet() {
               <LimitBar
                 icon={Lock}
                 label="Per-Mission Cap"
-                spentLabel="Current highest"
-                current={0}
+                spentLabel="Highest recorded spend"
+                current={profile.highestSpend || 0}
                 limit={profile.perMissionCap}
               />
               <LimitBar
@@ -74,9 +74,13 @@ export function MainWallet() {
         >
           <SectionCard icon={Landmark} title="Connected Bank Accounts" subtitle="Corporate funding sources">
             <div className="space-y-3">
-              {bankAccounts.map((acct, i) => (
-                <BankRow key={acct.id} account={acct} index={i} />
-              ))}
+              {bankAccounts.length === 0 ? (
+                <div className="text-[12px] text-ink-faint py-2">Awaiting secure backend sync...</div>
+              ) : (
+                bankAccounts.map((acct, i) => (
+                  <BankRow key={acct.id} account={acct} index={i} />
+                ))
+              )}
             </div>
           </SectionCard>
         </motion.div>
