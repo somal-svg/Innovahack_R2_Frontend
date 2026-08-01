@@ -1,10 +1,7 @@
-
-
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Send, Mic, Sparkles } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
-import { formatINR } from '@/utils/format';
 import type { ChatMessage } from '@/types';
 
 const SUGGESTED_PROMPTS = [
@@ -13,51 +10,6 @@ const SUGGESTED_PROMPTS = [
   'Book Flight',
   'Provision Database Cluster',
 ];
-
-// Local parser - extracts merchant and budget from text
-function extractMissionDetails(text: string): { name: string; merchant: string; budget: number } {
-  const lower = text.toLowerCase();
-  
-  // Merchant mapping
-  const merchantMap: Record<string, { merchant: string; defaultBudget: number }> = {
-    aws: { merchant: 'AWS India', defaultBudget: 45000 },
-    server: { merchant: 'AWS India', defaultBudget: 45000 },
-    github: { merchant: 'GitHub', defaultBudget: 1800 },
-    subscription: { merchant: 'GitHub', defaultBudget: 1800 },
-    flight: { merchant: 'IndiGo', defaultBudget: 22000 },
-    book: { merchant: 'IndiGo', defaultBudget: 22000 },
-    database: { merchant: 'AWS India', defaultBudget: 65000 },
-    cluster: { merchant: 'AWS India', defaultBudget: 65000 },
-    stripe: { merchant: 'Stripe India', defaultBudget: 12000 },
-  };
-
-  let merchant = 'Unknown Merchant';
-  let budget = 15000;
-
-  // Find matching merchant
-  for (const key of Object.keys(merchantMap)) {
-    if (lower.includes(key)) {
-      merchant = merchantMap[key].merchant;
-      budget = merchantMap[key].defaultBudget;
-      break;
-    }
-  }
-
-  // Try to extract a number from the text (e.g., "₹50,000")
-  const numberMatch = text.match(/(?:₹|Rs\.?\s*|\$)?\s*([\d,]+)/);
-  if (numberMatch) {
-    const num = parseInt(numberMatch[1].replace(/,/g, ''), 10);
-    if (!isNaN(num) && num > 0) {
-      budget = num;
-    }
-  }
-
-  return {
-    name: text.trim(),
-    merchant,
-    budget,
-  };
-}
 
 export function MissionConsole() {
   const { state, dispatch } = useAegis();
@@ -70,7 +22,6 @@ export function MissionConsole() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [state.chat]);
 
-  // Helper function to add chat messages
   const addChat = (role: 'user' | 'aegis', text: string) => {
     dispatch({
       type: 'ADD_CHAT',
@@ -90,22 +41,18 @@ export function MissionConsole() {
     setInput('');
   
     try {
-    const { name, merchant, budget } = extractMissionDetails(text);
-    // Add a local "processing" message (optional)
-    addChat('aegis', '🔄 Processing your request...');
-    await createMission(name, merchant, budget, text);  // <-- pass the original text
-    // Backend will add its own chat messages via socket, so we don't add success here
+      addChat('aegis', '🔄 Analyzing intent and provisioning Mission Wallet...');
+      await createMission(text);
     } catch (error: any) {
       console.error('Failed to process mission:', error);
-      addChat('aegis', `❌ Error: ${error.message || 'Failed to create mission. Please try again.'}`);
+      addChat('aegis', `❌ Error: ${error.message || 'Failed to create mission.'}`);
     } finally {
       setIsProcessing(false);
-  }
-};
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
       <div className="flex items-center gap-2.5 border-b border-gold/15 px-5 py-4">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gold/10 ring-1 ring-gold/30">
           <Sparkles className="h-4 w-4 text-gold" strokeWidth={2} />
@@ -118,7 +65,6 @@ export function MissionConsole() {
         </div>
       </div>
 
-      {/* Messages */}
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
         <AnimatePresence initial={false}>
           {state.chat.map((msg: ChatMessage) => (
@@ -127,7 +73,6 @@ export function MissionConsole() {
         </AnimatePresence>
       </div>
 
-      {/* Suggested prompts */}
       <div className="flex flex-wrap gap-2 px-5 pb-3">
         {SUGGESTED_PROMPTS.map((p) => (
           <button
@@ -141,7 +86,6 @@ export function MissionConsole() {
         ))}
       </div>
 
-      {/* Input */}
       <div className="px-5 pb-5">
         <div className="group relative flex items-end gap-2 rounded-2xl border border-gold/20 bg-bg-card/60 p-2.5 transition-all focus-within:border-gold/40 focus-within:shadow-gold-sm">
           <textarea
