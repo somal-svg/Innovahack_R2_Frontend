@@ -1,5 +1,3 @@
-
-
 import type {
   AegisState,
   ShieldId,
@@ -61,9 +59,9 @@ export const DEFAULT_POLICIES: Policy[] = [
   {
     id: 'p1',
     name: 'Max Spend Per Mission',
-    description: 'No single mission may spend more than ₹5,00,000.',
+    description: 'No single mission may spend more than ₹1,00,000.',
     enabled: true,
-    rule: 'mission.budget <= 500000',
+    rule: 'mission.budget <= 100000',
   },
   {
     id: 'p2',
@@ -83,14 +81,14 @@ export const DEFAULT_POLICIES: Policy[] = [
     id: 'p4',
     name: 'Prompt Injection Defense',
     description: 'Blocks instructions that attempt to override policy.',
-    enabled: true,
+    enabled: false,   // disabled to match backend (unsupported rule)
     rule: 'intent.signature == verified',
   },
   {
     id: 'p5',
     name: 'Rate Limit',
     description: 'Maximum 10 transactions per mission per minute.',
-    enabled: true,
+    enabled: false,   // disabled to match backend (unsupported rule)
     rule: 'tx.rate <= 10/min',
   },
 ];
@@ -100,9 +98,9 @@ const DEFAULT_PROFILE: EnterpriseProfile = {
   role: 'Chief Financial Officer',
   enterprise: 'Apex Labs India Pvt Ltd',
   plan: 'Enterprise Sovereign',
-  perMissionCap: 500000,
-  dailyOutflowCeiling: 2000000,
-  dailySpent: 480000,
+  perMissionCap: 100000,        // ₹1,00,000
+  dailyOutflowCeiling: 300000,  // ₹3,00,000
+  dailySpent: 50000,            // ₹50,000 already spent today
 };
 
 const DEFAULT_BANKS: BankAccount[] = [
@@ -112,7 +110,7 @@ const DEFAULT_BANKS: BankAccount[] = [
     label: 'Operating Account',
     last4: '8842',
     ifsc: 'HDFC0008842',
-    balance: 18500000,
+    balance: 600000,   // ₹6 Lakh
     type: 'Corporate Current',
     status: 'connected',
   },
@@ -122,7 +120,7 @@ const DEFAULT_BANKS: BankAccount[] = [
     label: 'Reserve Treasury',
     last4: '1190',
     ifsc: 'ICIC0001190',
-    balance: 32000000,
+    balance: 400000,   // ₹4 Lakh
     type: 'Sweep / Treasury',
     status: 'connected',
   },
@@ -163,7 +161,7 @@ export function initialState(): AegisState {
     blockedCount: 0,
     bankAccounts: DEFAULT_BANKS,
     profile: DEFAULT_PROFILE,
-    reserveBalance: 50500000,
+    reserveBalance: 1000000,   // ₹10,00,000
     allocatedBalance: 0,
   };
 }
