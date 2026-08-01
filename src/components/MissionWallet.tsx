@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Rocket, XCircle, ShieldAlert, Snowflake, RefreshCw } from 'lucide-react';
+import { CreditCard, Rocket, XCircle, ShieldAlert, Snowflake, RefreshCw, Copy, Check } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 import { formatINR } from '@/utils/format';
 
 export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }) {
   const { state } = useAegis();
   const { executeMission, cancelMission, cancelPendingTx, unfreezeWallet, rotateSessionKey } = useOrchestrator();
+  const [copied, setCopied] = useState(false);
 
   if (!state.mission || state.walletStatus === 'nuked') {
     return (
@@ -21,6 +23,18 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
   const isExecuting = mission.status === 'executing' || timeLockRemaining > 0;
   const isFrozen = state.walletStatus === 'frozen' || mission.status === 'frozen';
   const isFailed = ['failed', 'nuked'].includes(mission.status);
+
+  const handleCopyKey = () => {
+    if (mission.sessionKey) {
+      navigator.clipboard.writeText(mission.sessionKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const truncatedKey = mission.sessionKey 
+    ? `${mission.sessionKey.slice(0, 6)}...${mission.sessionKey.slice(-4)}` 
+    : 'None';
 
   return (
     <div className="flex h-full flex-col p-6 relative overflow-hidden">
@@ -58,7 +72,18 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
           </div>
           <div>
             <h2 className="text-[15px] font-bold text-white">{mission.name}</h2>
-            <div className="text-[11px] font-mono text-ink-dim">{mission.missionId} · Key: {mission.sessionKey?.slice(0, 10)}...</div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[11px] font-mono text-ink-dim">{mission.missionId}</span>
+              <span className="text-ink-faint">·</span>
+              <button 
+                onClick={handleCopyKey}
+                className="group flex items-center gap-1 font-mono text-[10px] text-gold/80 hover:text-gold transition-colors"
+                title="Copy full session key"
+              >
+                <span>Key: {truncatedKey}</span>
+                {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3 opacity-60 group-hover:opacity-100" />}
+              </button>
+            </div>
           </div>
         </div>
         <StatusBadge status={mission.status} />
@@ -68,7 +93,8 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
           <Detail label="Merchant Allowlist" value={mission.merchant} />
           <Detail label="Budget Allocated" value={formatINR(mission.budget ?? 0)} highlight />
           <Detail label="Total Spent" value={formatINR(mission.spent ?? 0)} />
-          <Detail label="Expires At" value={new Date(mission.expiry).toLocaleTimeString()} />
+          {/* Displays full Date and Time */}
+          <Detail label="Expires At" value={new Date(mission.expiry).toLocaleString()} />
       </div>
 
       {timeLockRemaining > 0 && (
