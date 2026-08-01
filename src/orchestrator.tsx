@@ -45,15 +45,14 @@ export function useOrchestrator() {
 
   // ============ MISSION OPERATIONS ============
 
-  const createMission = async (name: string, merchant: string, budget: number) => {
-    try {
-      await api.createMission(name, merchant, budget);
-      // The socket will update the state via 'mission_update' event
-    } catch (error: any) {
-      console.error('Failed to create mission:', error);
-      throw error;
-    }
-  };
+  const createMission = async (name: string, merchant: string, budget: number, userPrompt?: string) => {
+  try {
+    await api.createMission(name, merchant, budget, userPrompt);
+  } catch (error: any) {
+    console.error('Failed to create mission:', error);
+    throw error;
+   }
+ };
 
   const executeMission = async () => {
     try {

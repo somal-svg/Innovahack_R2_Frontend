@@ -84,31 +84,24 @@ export function MissionConsole() {
 
   const handleSend = async (text: string) => {
     if (!text.trim() || isProcessing) return;
-    
+  
     setIsProcessing(true);
     addChat('user', text);
     setInput('');
-    
+  
     try {
-      // Show thinking state
-      addChat('aegis', '🔄 Processing your request...');
-      
-      // Extract mission details locally (no backend call)
-      const { name, merchant, budget } = extractMissionDetails(text);
-      
-      // Add the acknowledgment
-      addChat('aegis', `✅ Acknowledged. Provisioning a Mission Wallet for "${name}" — merchant: ${merchant}, budget: ${formatINR(budget)}.`);
-      
-      // Create the mission via the backend API
-      await createMission(name, merchant, budget);
-      
+    const { name, merchant, budget } = extractMissionDetails(text);
+    // Add a local "processing" message (optional)
+    addChat('aegis', '🔄 Processing your request...');
+    await createMission(name, merchant, budget, text);  // <-- pass the original text
+    // Backend will add its own chat messages via socket, so we don't add success here
     } catch (error: any) {
       console.error('Failed to process mission:', error);
       addChat('aegis', `❌ Error: ${error.message || 'Failed to create mission. Please try again.'}`);
     } finally {
       setIsProcessing(false);
-    }
-  };
+  }
+};
 
   return (
     <div className="flex h-full flex-col">

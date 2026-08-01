@@ -13,11 +13,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 // ============ MISSION OPERATIONS ============
 
-export async function createMission(name: string, merchant: string, budget: number) {
+export async function createMission(name: string, merchant: string, budget: number, userPrompt?: string) {
   const response = await fetch(`${API_BASE}/api/mission/create`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, merchant, budget }),
+    body: JSON.stringify({ name, merchant, budget, userPrompt }),
   });
   return handleResponse(response);
 }
