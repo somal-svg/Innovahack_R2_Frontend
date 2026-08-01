@@ -4,11 +4,12 @@ import { Send, Mic, Sparkles } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 import type { ChatMessage } from '@/types';
 
+// Updated buttons to include explicit, clear budgets and intent.
 const SUGGESTED_PROMPTS = [
-  'Buy AWS Server',
-  'Renew GitHub Subscription',
-  'Book Flight',
-  'Provision Database Cluster',
+  'Buy AWS Server for ₹45,000',
+  'Renew GitHub Subscription at ₹1,800',
+  'Book IndiGo Flight for ₹22,000',
+  'Provision AWS Database Cluster max ₹65,000',
 ];
 
 export function MissionConsole() {
@@ -43,9 +44,12 @@ export function MissionConsole() {
     try {
       addChat('aegis', '🔄 Analyzing intent and provisioning Mission Wallet...');
       await createMission(text);
-    } catch (error: any) {
+    } catch (error) { // <-- REMOVED : any HERE
       console.error('Failed to process mission:', error);
-      addChat('aegis', `❌ Error: ${error.message || 'Failed to create mission.'}`);
+      
+      // Correct, strict-TypeScript way to get the error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create mission.';
+      addChat('aegis', `❌ Error: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }
@@ -77,7 +81,7 @@ export function MissionConsole() {
         {SUGGESTED_PROMPTS.map((p) => (
           <button
             key={p}
-            onClick={() => handleSend(p)}
+            onClick={() => void handleSend(p)}
             disabled={isProcessing}
             className="rounded-full border border-gold/20 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-ink-dim transition-all hover:border-gold/40 hover:text-white hover:shadow-gold-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -94,7 +98,7 @@ export function MissionConsole() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSend(input);
+                void handleSend(input);
               }
             }}
             rows={1}
@@ -107,7 +111,7 @@ export function MissionConsole() {
             <Mic className="h-4 w-4" strokeWidth={2} />
           </button>
           <button
-            onClick={() => handleSend(input)}
+            onClick={() => void handleSend(input)}
             disabled={!input.trim() || isProcessing}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold text-bg transition-all hover:shadow-gold disabled:opacity-30 disabled:hover:shadow-none"
           >

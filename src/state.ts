@@ -7,7 +7,6 @@ import type {
   TerminalLog,
   LogSeverity,
   Mission,
-  MissionStatus,
   BankAccount,
   EnterpriseProfile,
   ChatMessage,
@@ -81,14 +80,14 @@ export const DEFAULT_POLICIES: Policy[] = [
     id: 'p4',
     name: 'Prompt Injection Defense',
     description: 'Blocks instructions that attempt to override policy.',
-    enabled: false,   // disabled to match backend (unsupported rule)
+    enabled: false, 
     rule: 'intent.signature == verified',
   },
   {
     id: 'p5',
     name: 'Rate Limit',
     description: 'Maximum 10 transactions per mission per minute.',
-    enabled: false,   // disabled to match backend (unsupported rule)
+    enabled: false,  
     rule: 'tx.rate <= 10/min',
   },
 ];
@@ -98,9 +97,10 @@ const DEFAULT_PROFILE: EnterpriseProfile = {
   role: 'Chief Financial Officer',
   enterprise: 'Apex Labs India Pvt Ltd',
   plan: 'Enterprise Sovereign',
-  perMissionCap: 100000,        // ₹1,00,000
-  dailyOutflowCeiling: 300000,  // ₹3,00,000
-  dailySpent: 50000,            // ₹50,000 already spent today
+  perMissionCap: 100000,        
+  dailyOutflowCeiling: 300000,  
+  dailySpent: 50000,
+  highestSpend: 0
 };
 
 const DEFAULT_BANKS: BankAccount[] = [
@@ -110,7 +110,7 @@ const DEFAULT_BANKS: BankAccount[] = [
     label: 'Operating Account',
     last4: '8842',
     ifsc: 'HDFC0008842',
-    balance: 600000,   // ₹6 Lakh
+    balance: 600000,  
     type: 'Corporate Current',
     status: 'connected',
   },
@@ -120,7 +120,7 @@ const DEFAULT_BANKS: BankAccount[] = [
     label: 'Reserve Treasury',
     last4: '1190',
     ifsc: 'ICIC0001190',
-    balance: 400000,   // ₹4 Lakh
+    balance: 400000,   
     type: 'Sweep / Treasury',
     status: 'connected',
   },
@@ -149,7 +149,7 @@ export function initialState(): AegisState {
       {
         id: uid('msg'),
         role: 'aegis',
-        text: 'AEGIS online. Issue a mission instruction to provision a Mission Wallet. Try "Buy AWS Server" or "Renew GitHub Subscription".',
+        text: 'AEGIS online. Issue a mission instruction to provision a Mission Wallet. Try "Buy AWS Server for ₹45,000".',
         timestamp: Date.now(),
       },
     ],
@@ -159,10 +159,12 @@ export function initialState(): AegisState {
     trustScore: 98,
     attackCount: 0,
     blockedCount: 0,
+    consecutiveFailures: 0,
     bankAccounts: DEFAULT_BANKS,
     profile: DEFAULT_PROFILE,
-    reserveBalance: 1000000,   // ₹10,00,000
+    reserveBalance: 1000000,  
     allocatedBalance: 0,
+    timeLockRemaining: 0
   };
 }
 
@@ -181,14 +183,8 @@ export type Action =
   | { type: 'UPDATE_BALANCES'; payload: { reserveBalance: number; allocatedBalance: number } }
   | { type: 'UPDATE_PROFILE'; payload: EnterpriseProfile }
   | { type: 'UPDATE_MISSION'; payload: Partial<Mission> }
+  | { type: 'UPDATE_TIMELOCK'; payload: number }
   | { type: 'CLEAR_MISSION' };
-
-function hash(): string {
-  const chars = '0123456789abcdef';
-  let s = '0x';
-  for (let i = 0; i < 40; i++) s += chars[Math.floor(Math.random() * 16)];
-  return s;
-}
 
 export function reducer(state: AegisState, action: Action): AegisState {
   switch (action.type) {
@@ -277,6 +273,9 @@ export function reducer(state: AegisState, action: Action): AegisState {
         ? { ...state, mission: { ...state.mission, ...action.payload } }
         : state;
 
+    case 'UPDATE_TIMELOCK':
+      return { ...state, timeLockRemaining: action.payload };
+
     case 'CLEAR_MISSION':
       return { ...state, mission: null, walletStatus: 'empty' };
 
@@ -286,10 +285,3 @@ export function reducer(state: AegisState, action: Action): AegisState {
 }
 
 export type Dispatch = React.Dispatch<Action>;
-
-export function genMissionId(): string {
-  const chars = '0123456789ABCDEF';
-  let s = 'MID-';
-  for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * 16)];
-  return s;
-}
