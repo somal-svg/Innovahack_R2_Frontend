@@ -129,7 +129,7 @@ export function useOrchestrator() {
     }
   };
 
-  // ✅ NEW: Added Verification Handlers
+  // ✅ Verification Handlers
   const verifyOtp = async (missionId: string, otp: string) => {
     try {
       await api.verifyOtp(missionId, otp);
@@ -148,6 +148,16 @@ export function useOrchestrator() {
     }
   };
 
+  const approveVerification = async (missionId: string) => {
+    try {
+      await api.approveVerification(missionId);
+    } catch (error) {
+      console.error('Failed to approve verification:', error);
+      throw error;
+    }
+  };
+
+  // Attack Simulations
   const simulatePromptInjection = async () => {
     try {
       await api.simulatePromptInjection();
@@ -187,7 +197,8 @@ export function useOrchestrator() {
     togglePolicy,
     resetDemo,
     verifyOtp,
-    rejectVerification, // ✅ Exported Verification Handlers
+    rejectVerification,
+    approveVerification,  // ✅ NEW: exported for manual approval
     simulatePromptInjection,
     simulateStolenKey,
     launchSpamAttack,

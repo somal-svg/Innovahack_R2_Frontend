@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ShieldAlert, KeyRound, PhoneCall, XCircle, Search, Loader2 } from 'lucide-react';
+import { ShieldAlert, KeyRound, PhoneCall, XCircle, Search, Loader2, Check } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 
 export function VerificationPrompt() {
   const { state, dispatch } = useAegis();
-  const { verifyOtp, rejectVerification } = useOrchestrator();
+  const { verifyOtp, rejectVerification, approveVerification } = useOrchestrator();
   const { active, missionId, level, message } = state.verification;
 
   const [otpInput, setOtpInput] = useState('');
@@ -47,6 +47,18 @@ export function VerificationPrompt() {
       await rejectVerification(missionId);
     } catch (err: any) {
       setError('Failed to cancel mission.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await approveVerification(missionId);
+    } catch (err: any) {
+      setError(err.message || 'Failed to approve mission.');
     } finally {
       setLoading(false);
     }
@@ -142,6 +154,7 @@ export function VerificationPrompt() {
                  <p className="text-center text-[12px] text-warning font-medium max-w-[80%]">
                     This transaction has been paused indefinitely until a human administrator can review and sign off.
                  </p>
+                 {error && <div className="text-center text-[11px] text-error">{error}</div>}
                  <div className="w-full pt-4 flex gap-3">
                     <button
                       onClick={handleReject}
@@ -149,6 +162,13 @@ export function VerificationPrompt() {
                       className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-error/90 px-4 py-3 text-[13px] font-bold text-white hover:bg-error transition-colors disabled:opacity-50"
                     >
                       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><XCircle className="h-4 w-4" /> Reject Mission</>}
+                    </button>
+                    <button
+                      onClick={handleApprove}
+                      disabled={loading}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-success/90 px-4 py-3 text-[13px] font-bold text-white hover:bg-success transition-colors disabled:opacity-50"
+                    >
+                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4" /> Approve Mission</>}
                     </button>
                  </div>
               </div>

@@ -8,7 +8,7 @@ export type ShieldId =
   | 'timeLock'
   | 'circuitBreaker';
 
-// ✅ NEW: Added awaiting_otp, awaiting_review, cancelled
+// ✅ Mission statuses (including verification states)
 export type MissionStatus =
   | 'idle'
   | 'created'
@@ -23,6 +23,17 @@ export type MissionStatus =
   | 'cancelled';
 
 export type LogSeverity = 'info' | 'success' | 'warning' | 'error' | 'gold';
+
+// ✅ Category types (matches backend POLICY_LIBRARY keys)
+export type MissionCategory =
+  | 'cloud'
+  | 'saas'
+  | 'travel'
+  | 'payroll'
+  | 'procurement'
+  | 'marketing'
+  | 'professional'
+  | 'general';
 
 export interface ChatMessage {
   id: string;
@@ -59,6 +70,9 @@ export interface Mission {
   createdAt: number;
   userPrompt?: string;
   sessionKey: string;
+  // 👇 NEW: category and policy ID from the backend
+  category?: MissionCategory;   // e.g., 'cloud', 'saas'
+  policyId?: string;            // ID of the applied policy profile
 }
 
 export interface AuditEntry {
@@ -100,7 +114,7 @@ export interface EnterpriseProfile {
   highestSpend: number;
 }
 
-// ✅ NEW: Verification state to track the active security modal
+// ✅ Verification state (used by VerificationPrompt)
 export interface VerificationState {
   active: boolean;
   missionId: string | null;
@@ -125,5 +139,5 @@ export interface AegisState {
   allocatedBalance: number;
   consecutiveFailures: number;
   timeLockRemaining?: number;
-  verification: VerificationState; // ✅ Added to global state
+  verification: VerificationState;
 }

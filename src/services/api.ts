@@ -98,7 +98,7 @@ export async function resetDemo() {
   return handleResponse(response);
 }
 
-// ✅ NEW: Verification Endpoints
+// ✅ Verification Endpoints
 export async function verifyOtp(missionId: string, otp: string) {
   const response = await fetch(`${API_BASE}/api/missions/verify/otp`, {
     method: 'POST',
@@ -117,6 +117,16 @@ export async function rejectVerification(missionId: string) {
   return handleResponse(response);
 }
 
+export async function approveVerification(missionId: string) {
+  const response = await fetch(`${API_BASE}/api/missions/verify/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ missionId }),
+  });
+  return handleResponse(response);
+}
+
+// Attack Endpoints
 export async function simulatePromptInjection() {
   const response = await fetch(`${API_BASE}/api/attacks/prompt-injection`, {
     method: 'POST',

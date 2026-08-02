@@ -3,6 +3,20 @@ import { motion } from 'framer-motion';
 import { CreditCard, Rocket, XCircle, ShieldAlert, Snowflake, RefreshCw, Copy, Check } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 import { formatINR } from '@/utils/format';
+import { MissionPassport } from './MissionPassport';
+import { getPolicyByCategory } from '@/constants/policyProfiles';
+
+// Map category keys to emojis/display names
+const CATEGORY_META: Record<string, { icon: string; label: string }> = {
+  cloud: { icon: '☁️', label: 'Cloud' },
+  saas: { icon: '🤖', label: 'SaaS' },
+  travel: { icon: '✈️', label: 'Travel' },
+  payroll: { icon: '👨‍💼', label: 'Payroll' },
+  procurement: { icon: '📦', label: 'Procurement' },
+  marketing: { icon: '📢', label: 'Marketing' },
+  professional: { icon: '💼', label: 'Professional' },
+  general: { icon: '📄', label: 'General' },
+};
 
 export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }) {
   const { state } = useAegis();
@@ -35,6 +49,12 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
   const truncatedKey = mission.sessionKey 
     ? `${mission.sessionKey.slice(0, 6)}...${mission.sessionKey.slice(-4)}` 
     : 'None';
+
+  // Get category metadata, fallback to general if not set
+  const categoryMeta = mission.category ? CATEGORY_META[mission.category] : CATEGORY_META.general;
+
+  // Get the policy for this mission's category
+  const policy = mission.category ? getPolicyByCategory(mission.category) : null;
 
   return (
     <div className="flex h-full flex-col p-6 relative overflow-hidden">
@@ -71,7 +91,16 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
             <CreditCard className="h-5 w-5 text-gold" />
           </div>
           <div>
-            <h2 className="text-[15px] font-bold text-white">{mission.name}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-[15px] font-bold text-white">{mission.name}</h2>
+              {/* Category badge */}
+              {mission.category && (
+                <span className="flex items-center gap-1 rounded-full bg-gold/20 px-2.5 py-0.5 text-[10px] font-medium text-gold">
+                  <span>{categoryMeta.icon}</span>
+                  {categoryMeta.label}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[11px] font-mono text-ink-dim">{mission.missionId}</span>
               <span className="text-ink-faint">·</span>
@@ -94,13 +123,32 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
           <Detail label="Budget Allocated" value={formatINR(mission.budget ?? 0)} highlight />
           <Detail label="Total Spent" value={formatINR(mission.spent ?? 0)} />
           <Detail label="Expires At" value={new Date(mission.expiry).toLocaleString()} />
+          {/* Add category if it's not shown elsewhere */}
+          {mission.category && (
+            <Detail 
+              label="Mission Category" 
+              value={`${categoryMeta.icon} ${categoryMeta.label}`} 
+              highlight={false}
+            />
+          )}
       </div>
+
+      {/* ✅ Mission Passport */}
+      {policy && mission.category && (
+        <MissionPassport
+          category={mission.category}
+          policy={policy}
+          currentAmount={mission.budget}
+          currentRiskScore={mission.riskScore}
+        />
+      )}
 
       {timeLockRemaining > 0 && (
           <div className="mt-6 rounded-xl border border-warning/30 bg-warning/5 p-4">
             <div className="flex justify-between text-[12px] font-bold text-warning mb-2">
                 <span className="flex items-center gap-1.5">
-                  <div className="h-2 w-2 rounded-full bg-warning animate-pulse" /> 1-MINUTE TIME LOCK ACTIVE
+                  <div className="h-2 w-2 rounded-full bg-warning animate-pulse" /> 
+                  {policy ? `${policy.timelockSeconds / 60}-MINUTE TIME LOCK ACTIVE` : 'TIME LOCK ACTIVE'}
                 </span>
                 <span>{timeLockRemaining}s remaining to abort</span>
             </div>
@@ -108,7 +156,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
                 <motion.div 
                   className="h-full bg-warning"
                   initial={{ width: '100%' }}
-                  animate={{ width: `${(timeLockRemaining / 60) * 100}%` }}
+                  animate={{ width: `${(timeLockRemaining / (policy?.timelockSeconds || 60)) * 100}%` }}
                   transition={{ ease: 'linear' }}
                 />
             </div>
@@ -155,7 +203,6 @@ function Detail({ label, value, highlight }: { label: string, value: string, hig
 }
 
 function StatusBadge({ status }: { status: string }) {
-    // ✅ NEW: Added custom styles for the verification badges
     const config: Record<string, { bg: string, text: string }> = {
       idle: { bg: 'bg-white/5', text: 'text-ink-faint' },
       created: { bg: 'bg-gold/10', text: 'text-gold' },
