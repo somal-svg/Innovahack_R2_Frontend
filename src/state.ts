@@ -100,7 +100,7 @@ const DEFAULT_PROFILE: EnterpriseProfile = {
   plan: 'Enterprise Sovereign',
   perMissionCap: 100000,
   dailyOutflowCeiling: 300000,
-  dailySpent: 50000,
+  dailySpent: 0,      // ← changed from 50000
   highestSpend: 0,
 };
 
