@@ -71,6 +71,10 @@ export interface Mission {
   category?: MissionCategory;
   policyId?: string;
   riskScore?: number;
+  // Phase 2 optional fields
+  walletAddress?: string;
+  contractTxHash?: string;
+  explorerUrl?: string;
 }
 
 export interface AuditEntry {

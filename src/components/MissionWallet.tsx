@@ -1,4 +1,3 @@
-// src/components/MissionWallet.tsx
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -13,10 +12,11 @@ import {
   Lock,
   Clock,
   ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 import { formatINR } from '@/utils/format';
-import { getPolicyByCategory } from '@/constants/policyProfiles'; // ✅ Correct import
+import { getPolicyByCategory } from '@/constants/policyProfiles';
 
 const CATEGORY_META: Record<string, { icon: string; label: string }> = {
   cloud: { icon: '☁️', label: 'Cloud' },
@@ -37,7 +37,6 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
 
   const missionCategory = state.mission?.category;
 
-  // ✅ Use the actual policy library (not state.policies)
   const policy = (missionCategory ? getPolicyByCategory(missionCategory) : null)
     || getPolicyByCategory('general')
     || {
@@ -178,8 +177,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
           </div>
           <h3 className="text-xl font-black text-white uppercase tracking-widest">System Locked Down</h3>
           <p className="text-[12px] font-medium text-ink-dim max-w-[300px] mt-2 mb-8">
-            Emergency override active. All transactions paused. If frozen for 20+ minutes, session keys
-            auto-destruct.
+            Emergency override active. All transactions paused. If frozen for 20+ minutes, session keys auto-destruct.
           </p>
           <div className="flex w-full gap-3 max-w-[350px]">
             <button
@@ -216,11 +214,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
               >
                 <Lock className="h-3 w-3 text-gold/60" />
                 <span>{truncatedKey}</span>
-                {copied ? (
-                  <Check className="h-3 w-3 text-success ml-1" />
-                ) : (
-                  <Copy className="h-3 w-3 opacity-40 group-hover:opacity-100 ml-1" />
-                )}
+                {copied ? <Check className="h-3 w-3 text-success ml-1" /> : <Copy className="h-3 w-3 opacity-40 group-hover:opacity-100 ml-1" />}
               </button>
             </div>
           </div>
@@ -235,9 +229,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
           <div className="absolute top-0 right-0 bg-gold text-black text-[9px] font-black px-2.5 py-1 rounded-bl-lg uppercase tracking-widest">
             Escrowed
           </div>
-          <div className="text-[10px] uppercase tracking-widest text-gold font-bold mb-1.5">
-            Budget Locked
-          </div>
+          <div className="text-[10px] uppercase tracking-widest text-gold font-bold mb-1.5">Budget Locked</div>
           <div className="text-2xl font-black text-white">{formatINR(mission.budget ?? 0)}</div>
         </div>
 
@@ -245,32 +237,36 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
         <Detail label="Session Expiry" value={formattedExpiry} />
       </div>
 
+      {/* ===== OPTIONAL BLOCKCHAIN EXPLORER LINK ===== */}
+      {mission.explorerUrl && (
+        <div className="mt-3 flex items-center justify-end">
+          <a
+            href={mission.explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[10px] text-gold/80 hover:text-gold transition-colors"
+          >
+            <ExternalLink className="h-3 w-3" />
+            <span className="underline">View on BaseScan</span>
+          </a>
+        </div>
+      )}
+
       <div className="mt-5 flex flex-col gap-3">
         <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/40 p-4">
           <div className="flex items-center gap-4">
-            <div className="text-3xl drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">
-              {categoryMeta.icon}
-            </div>
+            <div className="text-3xl drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">{categoryMeta.icon}</div>
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-ink-faint font-bold mb-1">
-                Authorized Scope
-              </div>
-              <div className="text-[15px] font-black text-white tracking-widest uppercase">
-                {categoryMeta.label}
-              </div>
+              <div className="text-[10px] uppercase tracking-widest text-ink-faint font-bold mb-1">Authorized Scope</div>
+              <div className="text-[15px] font-black text-white tracking-widest uppercase">{categoryMeta.label}</div>
             </div>
           </div>
           <div className="text-right flex flex-col items-end">
-            <div className="text-[10px] uppercase tracking-widest text-ink-faint font-bold mb-1.5">
-              Approved Vendors
-            </div>
+            <div className="text-[10px] uppercase tracking-widest text-ink-faint font-bold mb-1.5">Approved Vendors</div>
             <div className="flex flex-wrap justify-end gap-1.5 max-w-[180px]">
               {policy?.allowedVendors && policy.allowedVendors.length > 0 ? (
                 policy.allowedVendors.map((vendor: string) => (
-                  <span
-                    key={vendor}
-                    className="text-[9px] font-mono font-bold text-gold/90 bg-gold/10 border border-gold/20 px-1.5 py-0.5 rounded"
-                  >
+                  <span key={vendor} className="text-[9px] font-mono font-bold text-gold/90 bg-gold/10 border border-gold/20 px-1.5 py-0.5 rounded">
                     {vendor}
                   </span>
                 ))
@@ -289,9 +285,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
               <Clock className="h-4 w-4" />
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-warning/70 font-bold mb-0.5">
-                Execution Delay
-              </div>
+              <div className="text-[10px] uppercase tracking-widest text-warning/70 font-bold mb-0.5">Execution Delay</div>
               <div className="text-[12px] font-bold text-white">{totalTime}-Sec Time-Lock</div>
             </div>
           </div>
@@ -301,9 +295,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
               <ShieldCheck className="h-4 w-4" />
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-success/70 font-bold mb-0.5">
-                Verification Rule
-              </div>
+              <div className="text-[10px] uppercase tracking-widest text-success/70 font-bold mb-0.5">Verification Rule</div>
               <div className="text-[12px] font-bold text-white">
                 OTP over {formatINR(policy?.verificationThresholds?.otp || 0)}
               </div>
@@ -312,25 +304,15 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
         </div>
       </div>
 
-      <div
-        className={`mt-5 rounded-2xl border-2 ${timerTheme.border} ${timerTheme.bg} p-5 shadow-lg relative overflow-hidden transition-colors duration-500`}
-      >
+      <div className={`mt-5 rounded-2xl border-2 ${timerTheme.border} ${timerTheme.bg} p-5 shadow-lg relative overflow-hidden transition-colors duration-500`}>
         <div className="flex items-end justify-between mb-3 relative z-10">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              {timerTheme.ping && (
-                <div className={`h-3 w-3 rounded-full ${timerTheme.fill} animate-ping`} />
-              )}
-              {!timerTheme.ping && (
-                <div className={`h-3 w-3 rounded-full ${timerTheme.fill}`} />
-              )}
-              <span className={`text-[12px] font-black tracking-widest ${timerTheme.text} uppercase`}>
-                Escrow Time-Lock
-              </span>
+              {timerTheme.ping && <div className={`h-3 w-3 rounded-full ${timerTheme.fill} animate-ping`} />}
+              {!timerTheme.ping && <div className={`h-3 w-3 rounded-full ${timerTheme.fill}`} />}
+              <span className={`text-[12px] font-black tracking-widest ${timerTheme.text} uppercase`}>Escrow Time-Lock</span>
             </div>
-            <span className={`text-[10px] font-medium ${timerTheme.text} opacity-80`}>
-              {timerStatusText}
-            </span>
+            <span className={`text-[10px] font-medium ${timerTheme.text} opacity-80`}>{timerStatusText}</span>
           </div>
           <span className={`text-3xl font-mono font-black ${timerTheme.text} tracking-tighter`}>
             00:{displayTime.toString().padStart(2, '0')}
@@ -350,42 +332,28 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
       <div className="mt-8 flex gap-3">
         {mission.status === 'created' && (
           <>
-            <button
-              onClick={() => void executeMission()}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gold text-bg py-4 text-[14px] font-black uppercase tracking-wider shadow-gold hover:scale-[1.02] transition-transform"
-            >
+            <button onClick={() => void executeMission()} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gold text-bg py-4 text-[14px] font-black uppercase tracking-wider shadow-gold hover:scale-[1.02] transition-transform">
               <Rocket className="h-5 w-5" /> Execute
             </button>
-            <button
-              onClick={() => void cancelMission()}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-white/10 text-white py-4 text-[14px] font-bold hover:bg-white/5 transition-colors"
-            >
+            <button onClick={() => void cancelMission()} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-white/10 text-white py-4 text-[14px] font-bold hover:bg-white/5 transition-colors">
               Cancel Mission
             </button>
           </>
         )}
         {isExecuting && !isFrozen && (
-          <button
-            onClick={() => void cancelMission()}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-error/90 text-white py-4 text-[14px] font-black uppercase tracking-wider transition-all hover:bg-error hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(239,68,68,0.3)]"
-          >
+          <button onClick={() => void cancelMission()} className="w-full flex items-center justify-center gap-2 rounded-xl bg-error/90 text-white py-4 text-[14px] font-black uppercase tracking-wider transition-all hover:bg-error hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(239,68,68,0.3)]">
             <XCircle className="h-5 w-5" /> Abort Transaction
           </button>
         )}
         {(isFailed || isCompleted) && (
-          <button
-            disabled
-            className="w-full rounded-xl bg-white/5 border border-white/5 text-ink-faint py-4 text-[13px] font-bold uppercase tracking-widest cursor-not-allowed"
-          >
+          <button disabled className="w-full rounded-xl bg-white/5 border border-white/5 text-ink-faint py-4 text-[13px] font-bold uppercase tracking-widest cursor-not-allowed">
             Mission Lifecycle Concluded
           </button>
         )}
       </div>
 
       <div className="absolute top-5 right-5 text-[10px] font-mono font-bold tracking-widest text-ink-faint">
-        <button onClick={onViewPolicies} className="underline hover:text-gold transition-colors uppercase">
-          View Internal Policy
-        </button>
+        <button onClick={onViewPolicies} className="underline hover:text-gold transition-colors uppercase">View Internal Policy</button>
       </div>
     </div>
   );
@@ -416,9 +384,7 @@ function StatusBadge({ status }: { status: string }) {
   const c = config[status] || config.idle;
 
   return (
-    <div
-      className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${c.bg} ${c.border} ${c.text}`}
-    >
+    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${c.bg} ${c.border} ${c.text}`}>
       {status.replace('_', ' ')}
     </div>
   );
