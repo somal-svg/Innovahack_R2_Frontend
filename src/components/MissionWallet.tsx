@@ -25,14 +25,18 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
   const missionCategory = state.mission?.category;
   const policies: Policy[] = state.policies || [];
   
-  const policy = policies.find((p) => p.category === missionCategory) || policies.find((p) => p.category === 'general') || ({
-    id: 'fallback',
-    name: 'General Governance',
-    enabled: true,
-    verificationThresholds: { otp: 10000, phone: 25000, manual: 50000 },
-    timelockSeconds: 60,
-    allowedVendors: []
-  } as unknown as Policy);
+  // 🚨 FIX: Case-insensitive, robust policy lookup to prevent falling back to General Governance
+  const normalizedCategory = missionCategory?.toLowerCase().trim();
+  const policy = policies.find((p) => p.category?.toLowerCase() === normalizedCategory) 
+    || policies.find((p) => p.category?.toLowerCase() === 'general') 
+    || ({
+      id: 'fallback',
+      name: 'General Governance',
+      enabled: true,
+      verificationThresholds: { otp: 10000, phone: 25000, manual: 50000 },
+      timelockSeconds: 60,
+      allowedVendors: []
+    } as unknown as Policy);
 
   const totalTime = policy.timelockSeconds || 60;
   const [localTimer, setLocalTimer] = useState(totalTime);
@@ -63,14 +67,14 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
     return () => clearInterval(interval);
   }, [missionStatus, walletStatus]); 
 
-  // EMPTY STATE (Subtitle Removed)
+  // 🚨 FIX: Minimal, space-saving empty state (Removed subtitle & reduced height)
   if (!state.mission || state.walletStatus === 'nuked') {
     return (
-      <div className="flex flex-col items-center justify-center p-10 text-center opacity-70">
-        <div className="h-16 w-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 border border-gold/20">
-          <ShieldAlert className="h-8 w-8 text-gold" strokeWidth={1.5} />
+      <div className="flex flex-col items-center justify-center py-6 px-4 text-center opacity-70 bg-bg-secondary/30 rounded-xl border border-white/5">
+        <div className="h-12 w-12 rounded-full bg-gold/10 flex items-center justify-center mb-3 border border-gold/20">
+          <ShieldAlert className="h-6 w-6 text-gold" strokeWidth={1.5} />
         </div>
-        <p className="text-[16px] font-bold text-white tracking-wide">No Active Mission Wallet</p>
+        <p className="text-[15px] font-bold text-white tracking-wide">No Active Mission Wallet</p>
       </div>
     );
   }
@@ -93,7 +97,10 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
     ? `${mission.sessionKey.slice(0, 6)}...${mission.sessionKey.slice(-4)}` 
     : 'None';
 
-  const categoryMeta = mission.category ? CATEGORY_META[mission.category] : CATEGORY_META.general;
+  // Fallback to general category icon if undefined
+  const categoryMeta = (missionCategory && CATEGORY_META[missionCategory.toLowerCase()]) 
+    ? CATEGORY_META[missionCategory.toLowerCase()] 
+    : CATEGORY_META.general;
 
   const formattedExpiry = new Date(mission.expiry).toLocaleString('en-US', { 
     month: 'short', 
@@ -208,7 +215,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
               </div>
             </div>
             <div className="text-right flex flex-col items-end">
-              <div className="text-[10px] uppercase tracking-widest text-ink-faint font-bold mb-1.5">Approved Vendors</div>
+              <div className="text-[10px] uppercase tracking-widest text-ink-faint font-bold mb-1.5">Policy / Vendors</div>
               <div className="flex flex-wrap justify-end gap-1.5 max-w-[180px]">
                 {policy.allowedVendors && policy.allowedVendors.length > 0 ? (
                   policy.allowedVendors.map(vendor => (
@@ -217,8 +224,8 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
                     </span>
                   ))
                 ) : (
-                  <span className="text-[9px] font-mono text-white/70 bg-white/10 px-1.5 py-0.5 rounded">
-                    Any Vendor (General)
+                  <span className="text-[9px] font-mono font-bold text-gold/90 bg-gold/10 border border-gold/20 px-1.5 py-0.5 rounded">
+                    {policy.name}
                   </span>
                 )}
               </div>
