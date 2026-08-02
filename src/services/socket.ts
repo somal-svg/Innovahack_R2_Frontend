@@ -36,6 +36,9 @@ export function initializeSocket(dispatch: Dispatch<Action>): Socket {
   socket.on('profile_update', (profile) => dispatch({ type: 'UPDATE_PROFILE', payload: profile }));
   socket.on('state_reset', (data) => dispatch({ type: 'INIT_STATE', payload: data }));
   socket.on('time_lock_update', (data) => dispatch({ type: 'UPDATE_TIMELOCK', payload: data.remaining }));
+  
+  // ✅ NEW: Verification Engine Socket Link
+  socket.on('verification_update', (data) => dispatch({ type: 'SET_VERIFICATION', payload: data }));
 
   return socket;
 }

@@ -10,6 +10,7 @@ import type {
   BankAccount,
   EnterpriseProfile,
   ChatMessage,
+  VerificationState,
 } from '@/types';
 
 let idCounter = 0;
@@ -164,7 +165,8 @@ export function initialState(): AegisState {
     profile: DEFAULT_PROFILE,
     reserveBalance: 1000000,  
     allocatedBalance: 0,
-    timeLockRemaining: 0
+    timeLockRemaining: 0,
+    verification: { active: false, missionId: null, level: null, message: null }, // ✅ Default state
   };
 }
 
@@ -184,7 +186,9 @@ export type Action =
   | { type: 'UPDATE_PROFILE'; payload: EnterpriseProfile }
   | { type: 'UPDATE_MISSION'; payload: Partial<Mission> }
   | { type: 'UPDATE_TIMELOCK'; payload: number }
-  | { type: 'CLEAR_MISSION' };
+  | { type: 'CLEAR_MISSION' }
+  | { type: 'SET_VERIFICATION'; payload: { missionId: string; level: string; message: string } } // ✅ NEW action
+  | { type: 'CLEAR_VERIFICATION' };
 
 export function reducer(state: AegisState, action: Action): AegisState {
   switch (action.type) {
@@ -198,6 +202,7 @@ export function reducer(state: AegisState, action: Action): AegisState {
         shields: action.payload?.shields || state.shields || makeShields(),
         mission: action.payload?.mission !== undefined ? action.payload.mission : state.mission,
         walletStatus: action.payload?.walletStatus || state.walletStatus || 'empty',
+        verification: state.verification || { active: false, missionId: null, level: null, message: null },
       };
 
     case 'RESET':
@@ -292,6 +297,23 @@ export function reducer(state: AegisState, action: Action): AegisState {
 
     case 'CLEAR_MISSION':
       return { ...state, mission: null, walletStatus: 'empty' };
+
+    // ✅ NEW: Handle incoming verification events
+    case 'SET_VERIFICATION': {
+      const isClosingEvent = ['resolved', 'rejected'].includes(action.payload.level);
+      return {
+        ...state,
+        verification: {
+          active: !isClosingEvent,
+          missionId: action.payload.missionId,
+          level: action.payload.level as VerificationState['level'],
+          message: action.payload.message,
+        },
+      };
+    }
+
+    case 'CLEAR_VERIFICATION':
+      return { ...state, verification: { active: false, missionId: null, level: null, message: null } };
 
     default:
       return state;

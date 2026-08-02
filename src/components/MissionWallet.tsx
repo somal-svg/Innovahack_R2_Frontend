@@ -22,7 +22,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
   const { mission, timeLockRemaining = 0 } = state;
   const isExecuting = mission.status === 'executing' || timeLockRemaining > 0;
   const isFrozen = state.walletStatus === 'frozen' || mission.status === 'frozen';
-  const isFailed = ['failed', 'nuked'].includes(mission.status);
+  const isFailed = ['failed', 'nuked', 'cancelled'].includes(mission.status);
 
   const handleCopyKey = () => {
     if (mission.sessionKey) {
@@ -93,7 +93,6 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
           <Detail label="Merchant Allowlist" value={mission.merchant} />
           <Detail label="Budget Allocated" value={formatINR(mission.budget ?? 0)} highlight />
           <Detail label="Total Spent" value={formatINR(mission.spent ?? 0)} />
-          {/* Displays full Date and Time */}
           <Detail label="Expires At" value={new Date(mission.expiry).toLocaleString()} />
       </div>
 
@@ -156,11 +155,15 @@ function Detail({ label, value, highlight }: { label: string, value: string, hig
 }
 
 function StatusBadge({ status }: { status: string }) {
+    // ✅ NEW: Added custom styles for the verification badges
     const config: Record<string, { bg: string, text: string }> = {
       idle: { bg: 'bg-white/5', text: 'text-ink-faint' },
       created: { bg: 'bg-gold/10', text: 'text-gold' },
+      awaiting_otp: { bg: 'bg-warning/20 border border-warning/40', text: 'text-warning animate-pulse' },
+      awaiting_review: { bg: 'bg-warning/20 border border-warning/40', text: 'text-warning animate-pulse' },
       executing: { bg: 'bg-warning/10', text: 'text-warning' },
       completed: { bg: 'bg-success/10', text: 'text-success' },
+      cancelled: { bg: 'bg-white/5', text: 'text-ink-dim' },
       failed: { bg: 'bg-error/10', text: 'text-error' },
       frozen: { bg: 'bg-error/10', text: 'text-error animate-pulse' },
       nuked: { bg: 'bg-error/10 text-error', text: 'text-error' },
@@ -169,7 +172,7 @@ function StatusBadge({ status }: { status: string }) {
     
     return (
       <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${c.bg} ${c.text}`}>
-          {status}
+          {status.replace('_', ' ')}
       </div>
     );
 }

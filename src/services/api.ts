@@ -3,7 +3,7 @@ const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `HTTP error ${response.status}`);
+    throw new Error(error.error || error.message || `HTTP error ${response.status}`);
   }
   return response.json();
 }
@@ -94,6 +94,25 @@ export async function resetDemo() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
+  });
+  return handleResponse(response);
+}
+
+// ✅ NEW: Verification Endpoints
+export async function verifyOtp(missionId: string, otp: string) {
+  const response = await fetch(`${API_BASE}/api/missions/verify/otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ missionId, otp }),
+  });
+  return handleResponse(response);
+}
+
+export async function rejectVerification(missionId: string) {
+  const response = await fetch(`${API_BASE}/api/missions/verify/reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ missionId }),
   });
   return handleResponse(response);
 }

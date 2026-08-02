@@ -8,15 +8,19 @@ export type ShieldId =
   | 'timeLock'
   | 'circuitBreaker';
 
+// ✅ NEW: Added awaiting_otp, awaiting_review, cancelled
 export type MissionStatus =
   | 'idle'
   | 'created'
   | 'validating'
+  | 'awaiting_otp'
+  | 'awaiting_review'
   | 'executing'
   | 'completed'
   | 'failed'
   | 'frozen'
-  | 'nuked';
+  | 'nuked'
+  | 'cancelled';
 
 export type LogSeverity = 'info' | 'success' | 'warning' | 'error' | 'gold';
 
@@ -96,6 +100,14 @@ export interface EnterpriseProfile {
   highestSpend: number;
 }
 
+// ✅ NEW: Verification state to track the active security modal
+export interface VerificationState {
+  active: boolean;
+  missionId: string | null;
+  level: 'otp' | 'phone' | 'manual' | 'resolved' | 'rejected' | null;
+  message: string | null;
+}
+
 export interface AegisState {
   mission: Mission | null;
   shields: Record<ShieldId, ShieldState>;
@@ -113,4 +125,5 @@ export interface AegisState {
   allocatedBalance: number;
   consecutiveFailures: number;
   timeLockRemaining?: number;
+  verification: VerificationState; // ✅ Added to global state
 }

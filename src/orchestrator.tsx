@@ -129,6 +129,25 @@ export function useOrchestrator() {
     }
   };
 
+  // ✅ NEW: Added Verification Handlers
+  const verifyOtp = async (missionId: string, otp: string) => {
+    try {
+      await api.verifyOtp(missionId, otp);
+    } catch (error) {
+      console.error('Failed to verify OTP:', error);
+      throw error;
+    }
+  };
+
+  const rejectVerification = async (missionId: string) => {
+    try {
+      await api.rejectVerification(missionId);
+    } catch (error) {
+      console.error('Failed to reject verification:', error);
+      throw error;
+    }
+  };
+
   const simulatePromptInjection = async () => {
     try {
       await api.simulatePromptInjection();
@@ -167,6 +186,8 @@ export function useOrchestrator() {
     cancelPendingTx,
     togglePolicy,
     resetDemo,
+    verifyOtp,
+    rejectVerification, // ✅ Exported Verification Handlers
     simulatePromptInjection,
     simulateStolenKey,
     launchSpamAttack,

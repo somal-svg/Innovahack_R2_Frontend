@@ -9,6 +9,7 @@ import { SecurityEngine } from '@/components/SecurityEngine';
 import { LiveTerminal } from '@/components/LiveTerminal';
 import { DemoControls } from '@/components/DemoControls';
 import { Modals } from '@/components/Modals';
+import { VerificationPrompt } from '@/components/VerificationPrompt'; // ✅ Imported Prompt
 
 function Dashboard() {
   const { state } = useAegis();
@@ -55,6 +56,7 @@ function Dashboard() {
         </main>
 
         <Modals open={modal} onClose={() => setModal(null)} />
+        <VerificationPrompt /> {/* ✅ Added globally to catch all Verification Events */}
       </div>
     </div>
   );
