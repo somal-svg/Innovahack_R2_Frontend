@@ -35,7 +35,7 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
       phone: 75000,
       manual: 150000,
     },
-    timelockSeconds: 120,
+    timelockSeconds: 60,   // <-- changed from 120
     expiryHours: 2,
     trustRequirement: 'medium',
     maxConsecutiveFailures: 3,
@@ -55,7 +55,7 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
       phone: 60000,
       manual: 100000,
     },
-    timelockSeconds: 60,
+    timelockSeconds: 60,   // <-- changed from 60 (was already 60, but now uniform)
     expiryHours: 24,
     trustRequirement: 'medium',
     maxConsecutiveFailures: 3,
@@ -75,7 +75,7 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
       phone: 30000,
       manual: 50000,
     },
-    timelockSeconds: 180,
+    timelockSeconds: 60,   // <-- changed from 180
     expiryHours: 24,
     trustRequirement: 'low',
     maxConsecutiveFailures: 3,
@@ -95,7 +95,7 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
       phone: 500000,
       manual: 1000000,
     },
-    timelockSeconds: 600,
+    timelockSeconds: 60,   // <-- changed from 600
     expiryHours: 48,
     trustRequirement: 'high',
     maxConsecutiveFailures: 2,
@@ -115,7 +115,7 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
       phone: 25000,
       manual: 40000,
     },
-    timelockSeconds: 60,
+    timelockSeconds: 60,   // <-- changed from 60 (already 60)
     expiryHours: 6,
     trustRequirement: 'low',
     maxConsecutiveFailures: 3,
@@ -135,7 +135,7 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
       phone: 40000,
       manual: 70000,
     },
-    timelockSeconds: 60,
+    timelockSeconds: 60,   // <-- changed from 60 (already 60)
     expiryHours: 24,
     trustRequirement: 'medium',
     maxConsecutiveFailures: 3,
@@ -155,7 +155,7 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
       phone: 100000,
       manual: 200000,
     },
-    timelockSeconds: 180,
+    timelockSeconds: 60,   // <-- changed from 180
     expiryHours: 24,
     trustRequirement: 'medium',
     maxConsecutiveFailures: 3,
@@ -175,7 +175,7 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
       phone: 10000,
       manual: 15000,
     },
-    timelockSeconds: 60,
+    timelockSeconds: 60,   // <-- changed from 60 (already 60)
     expiryHours: 2,
     trustRequirement: 'high',
     maxConsecutiveFailures: 2,
@@ -184,8 +184,14 @@ export const POLICY_LIBRARY: PolicyProfile[] = [
   },
 ];
 
+/**
+ * Case‑insensitive lookup for category → policy.
+ * Returns undefined if category is falsy or not found.
+ */
 export function getPolicyByCategory(category: string): PolicyProfile | undefined {
-  return POLICY_LIBRARY.find(p => p.category === category);
+  if (!category) return undefined;
+  const normalized = category.trim().toLowerCase();
+  return POLICY_LIBRARY.find(p => p.category === normalized);
 }
 
 export function getDefaultPolicy(): PolicyProfile {
