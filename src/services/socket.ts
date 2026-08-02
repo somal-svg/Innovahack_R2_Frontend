@@ -28,7 +28,7 @@ export function initializeSocket(dispatch: Dispatch<Action>): Socket {
   socket.on('shield_update', (data) => dispatch({ type: 'UPDATE_SHIELD', payload: data }));
   socket.on('mission_update', (data) => dispatch({ type: 'SET_MISSION', payload: data.mission }));
   socket.on('wallet_status', (data) => dispatch({ type: 'SET_WALLET_STATUS', payload: data.status }));
-  socket.on('trust_update', (data) => dispatch({ type: 'SET_TRUST', payload: data.trustScore }));
+  
   socket.on('audit', (entry) => dispatch({ type: 'ADD_AUDIT', payload: entry }));
   socket.on('attack_stats', (data) => dispatch({ type: 'UPDATE_ATTACK_STATS', payload: data }));
   socket.on('policy_update', (data) => dispatch({ type: 'UPDATE_POLICIES', payload: data.policies }));

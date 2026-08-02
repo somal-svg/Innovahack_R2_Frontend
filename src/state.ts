@@ -98,10 +98,10 @@ const DEFAULT_PROFILE: EnterpriseProfile = {
   role: 'Chief Financial Officer',
   enterprise: 'Apex Labs India Pvt Ltd',
   plan: 'Enterprise Sovereign',
-  perMissionCap: 100000,        
-  dailyOutflowCeiling: 300000,  
+  perMissionCap: 100000,
+  dailyOutflowCeiling: 300000,
   dailySpent: 50000,
-  highestSpend: 0
+  highestSpend: 0,
 };
 
 const DEFAULT_BANKS: BankAccount[] = [
@@ -111,7 +111,7 @@ const DEFAULT_BANKS: BankAccount[] = [
     label: 'Operating Account',
     last4: '8842',
     ifsc: 'HDFC0008842',
-    balance: 600000,  
+    balance: 600000,
     type: 'Corporate Current',
     status: 'connected',
   },
@@ -121,7 +121,7 @@ const DEFAULT_BANKS: BankAccount[] = [
     label: 'Reserve Treasury',
     last4: '1190',
     ifsc: 'ICIC0001190',
-    balance: 400000,   
+    balance: 400000,
     type: 'Sweep / Treasury',
     status: 'connected',
   },
@@ -157,16 +157,16 @@ export function initialState(): AegisState {
     audit: [],
     policies: DEFAULT_POLICIES.map((p) => ({ ...p })),
     walletStatus: 'empty',
-    trustScore: 98,
+    // trustScore: 98,  // ❌ REMOVED
     attackCount: 0,
     blockedCount: 0,
     consecutiveFailures: 0,
     bankAccounts: DEFAULT_BANKS,
     profile: DEFAULT_PROFILE,
-    reserveBalance: 1000000,  
+    reserveBalance: 1000000,
     allocatedBalance: 0,
     timeLockRemaining: 0,
-    verification: { active: false, missionId: null, level: null, message: null }, // ✅ Default state
+    verification: { active: false, missionId: null, level: null, message: null },
   };
 }
 
@@ -178,7 +178,7 @@ export type Action =
   | { type: 'UPDATE_SHIELD'; payload: { id: ShieldId; status: ShieldState['status']; lastCheck?: string } }
   | { type: 'SET_MISSION'; payload: Mission | null }
   | { type: 'SET_WALLET_STATUS'; payload: AegisState['walletStatus'] }
-  | { type: 'SET_TRUST'; payload: number }
+  // | { type: 'SET_TRUST'; payload: number }   // ❌ REMOVED
   | { type: 'ADD_AUDIT'; payload: AuditEntry }
   | { type: 'UPDATE_ATTACK_STATS'; payload: { attackCount: number; blockedCount: number } }
   | { type: 'UPDATE_POLICIES'; payload: Policy[] }
@@ -187,7 +187,7 @@ export type Action =
   | { type: 'UPDATE_MISSION'; payload: Partial<Mission> }
   | { type: 'UPDATE_TIMELOCK'; payload: number }
   | { type: 'CLEAR_MISSION' }
-  | { type: 'SET_VERIFICATION'; payload: { missionId: string; level: string; message: string } } // ✅ NEW action
+  | { type: 'SET_VERIFICATION'; payload: { missionId: string; level: string; message: string } }
   | { type: 'CLEAR_VERIFICATION' };
 
 export function reducer(state: AegisState, action: Action): AegisState {
@@ -256,8 +256,8 @@ export function reducer(state: AegisState, action: Action): AegisState {
     case 'SET_WALLET_STATUS':
       return { ...state, walletStatus: action.payload };
 
-    case 'SET_TRUST':
-      return { ...state, trustScore: Math.max(0, Math.min(100, action.payload)) };
+    // case 'SET_TRUST':   // ❌ REMOVED
+    //   return { ...state, trustScore: Math.max(0, Math.min(100, action.payload)) };
 
     case 'ADD_AUDIT': {
       const currentAudit = Array.isArray(state.audit) ? state.audit : [];
@@ -298,7 +298,6 @@ export function reducer(state: AegisState, action: Action): AegisState {
     case 'CLEAR_MISSION':
       return { ...state, mission: null, walletStatus: 'empty' };
 
-    // ✅ NEW: Handle incoming verification events
     case 'SET_VERIFICATION': {
       const isClosingEvent = ['resolved', 'rejected'].includes(action.payload.level);
       return {

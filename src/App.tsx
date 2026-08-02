@@ -25,7 +25,6 @@ function Dashboard() {
         <TopNav
           active={tab}
           onNavigate={setTab}
-          trustScore={state.trustScore}
           walletStatus={state.walletStatus}
         />
 

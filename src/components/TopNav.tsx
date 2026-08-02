@@ -15,11 +15,10 @@ const TABS: TabItem[] = [
 interface Props {
   active: 'main' | 'missions';
   onNavigate: (id: 'main' | 'missions') => void;
-  trustScore: number;
   walletStatus: 'empty' | 'active' | 'frozen' | 'nuked';
 }
 
-export function TopNav({ active, onNavigate, trustScore, walletStatus }: Props) {
+export function TopNav({ active, onNavigate, walletStatus }: Props) {
   const walletLabel =
     walletStatus === 'active'
       ? 'Active'
@@ -89,17 +88,17 @@ export function TopNav({ active, onNavigate, trustScore, walletStatus }: Props) 
         <div className="flex items-center gap-4">
           <div className="hidden items-center gap-2 lg:flex">
             <div className="flex items-center gap-2 rounded-full border border-gold/20 bg-bg-card/60 px-3 py-1.5">
-              <div className={`h-1.5 w-1.5 rounded-full ${walletColor.replace('text-', 'bg-')} ${walletStatus === 'active' ? 'animate-pulse' : ''}`} />
+              <div
+                className={`h-1.5 w-1.5 rounded-full ${walletColor.replace(
+                  'text-',
+                  'bg-'
+                )} ${walletStatus === 'active' ? 'animate-pulse' : ''}`}
+              />
               <span className={`text-[11px] font-medium ${walletColor}`}>
                 {walletLabel}
               </span>
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-gold/20 bg-bg-card/60 px-3 py-1.5">
-              <Shield className="h-3 w-3 text-gold" strokeWidth={2.5} />
-              <span className="text-[11px] font-medium text-white">
-                Trust {trustScore}
-              </span>
-            </div>
+            {/* Trust badge removed */}
           </div>
           <div className="flex items-center gap-2.5">
             <div className="text-right leading-none">

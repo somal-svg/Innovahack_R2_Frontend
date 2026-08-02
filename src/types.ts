@@ -146,7 +146,6 @@ export interface AegisState {
   audit: AuditEntry[];
   policies: Policy[];
   walletStatus: 'empty' | 'active' | 'frozen' | 'nuked';
-  trustScore: number;
   attackCount: number;
   blockedCount: number;
   bankAccounts: BankAccount[];

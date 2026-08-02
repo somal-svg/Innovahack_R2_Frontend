@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react'; // ← added useMemo
 import { motion } from 'framer-motion';
 import {
   CreditCard,
@@ -13,6 +13,8 @@ import {
   Clock,
   ShieldCheck,
   ExternalLink,
+  KeyRound,       // ← added
+  PhoneCall,      // ← added
 } from 'lucide-react';
 import { useAegis, useOrchestrator } from '@/orchestrator';
 import { formatINR } from '@/utils/format';
@@ -29,41 +31,110 @@ const CATEGORY_META: Record<string, { icon: string; label: string }> = {
   general: { icon: '📄', label: 'General' },
 };
 
+// ============================================================
+// 🧠 HELPER: Computes actual verification level (matches backend)
+// ============================================================
+function computeVerificationLevel(
+  amount: number,
+  thresholds: { otp: number; phone: number; manual: number },
+  riskScore?: number
+): { level: 0 | 1 | 2 | 3; label: string; description: string } {
+  // Risk-based escalation (highest priority)
+  if (riskScore !== undefined) {
+    if (riskScore > 80) {
+      return {
+        level: 3,
+        label: 'Manual Review',
+        description: `High risk (${riskScore}%) – manual approval required.`,
+      };
+    }
+    if (riskScore > 70) {
+      return {
+        level: 2,
+        label: 'Phone Notification',
+        description: `Moderate risk (${riskScore}%) – CFO will be alerted.`,
+      };
+    }
+  }
+
+  // Amount-based thresholds
+  if (amount >= thresholds.manual) {
+    return {
+      level: 3,
+      label: 'Manual Review',
+      description: `₹${amount.toLocaleString()} exceeds manual review threshold of ₹${thresholds.manual.toLocaleString()}.`,
+    };
+  }
+  if (amount >= thresholds.phone) {
+    return {
+      level: 2,
+      label: 'Phone Notification',
+      description: `₹${amount.toLocaleString()} exceeds phone notification threshold of ₹${thresholds.phone.toLocaleString()}.`,
+    };
+  }
+  if (amount >= thresholds.otp) {
+    return {
+      level: 1,
+      label: 'OTP Required',
+      description: `₹${amount.toLocaleString()} exceeds OTP threshold of ₹${thresholds.otp.toLocaleString()}.`,
+    };
+  }
+  return {
+    level: 0,
+    label: 'Auto-execute',
+    description: `₹${amount.toLocaleString()} is below all verification thresholds.`,
+  };
+}
+
 export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }) {
   const { state } = useAegis();
   const { executeMission, cancelMission, unfreezeWallet, rotateSessionKey } = useOrchestrator();
 
   const [copied, setCopied] = useState(false);
 
-  const missionCategory = state.mission?.category;
+  const mission = state.mission;
+  const missionCategory = mission?.category;
 
-  const policy = (missionCategory ? getPolicyByCategory(missionCategory) : null)
-    || getPolicyByCategory('general')
-    || {
-        id: 'fallback',
-        name: 'General',
-        icon: '📄',
-        defaultBudget: 10000,
-        allowedVendors: [],
-        verificationThresholds: { otp: 5000, phone: 10000, manual: 15000 },
-        timelockSeconds: 60,
-        trustRequirement: 'medium',
-        fallback: 'manual_review',
-      };
+  // Get policy based on category (memoized)
+  const policy = useMemo(() => {
+    return (missionCategory ? getPolicyByCategory(missionCategory) : null)
+      || getPolicyByCategory('general')
+      || {
+          id: 'fallback',
+          name: 'General',
+          icon: '📄',
+          defaultBudget: 10000,
+          allowedVendors: [],
+          verificationThresholds: { otp: 5000, phone: 10000, manual: 15000 },
+          timelockSeconds: 60,
+          trustRequirement: 'medium',
+          fallback: 'manual_review',
+        };
+  }, [missionCategory]);
+
+  // Compute dynamic verification level (memoized)
+  const verification = useMemo(() => {
+    if (!mission || !policy) return null;
+    return computeVerificationLevel(
+      mission.budget,
+      policy.verificationThresholds,
+      mission.riskScore // may be undefined
+    );
+  }, [mission, policy]);
 
   const totalTime = policy?.timelockSeconds || 60;
   const [localTimer, setLocalTimer] = useState(totalTime);
-  const [lastMissionId, setLastMissionId] = useState(state.mission?.id);
+  const [lastMissionId, setLastMissionId] = useState(mission?.id);
 
-  const missionStatus = state.mission?.status;
+  const missionStatus = mission?.status;
   const walletStatus = state.walletStatus;
 
   useEffect(() => {
-    if (state.mission?.id && state.mission.id !== lastMissionId) {
+    if (mission?.id && mission.id !== lastMissionId) {
       setLocalTimer(totalTime);
-      setLastMissionId(state.mission.id);
+      setLastMissionId(mission.id);
     }
-  }, [state.mission?.id, lastMissionId, totalTime]);
+  }, [mission?.id, lastMissionId, totalTime]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -80,7 +151,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
   }, [missionStatus, walletStatus]);
 
   // EMPTY STATE
-  if (!state.mission || state.walletStatus === 'nuked') {
+  if (!mission || state.walletStatus === 'nuked') {
     return (
       <div className="flex flex-col items-center justify-center p-10 text-center opacity-70">
         <div className="h-16 w-16 rounded-full bg-gold/10 flex items-center justify-center mb-4 border border-gold/20">
@@ -91,7 +162,7 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
     );
   }
 
-  const { mission, timeLockRemaining = 0 } = state;
+  const { timeLockRemaining = 0 } = state;
   const isExecuting = mission.status === 'executing' || timeLockRemaining > 0;
   const isFrozen = state.walletStatus === 'frozen' || mission.status === 'frozen';
   const isFailed = ['failed', 'nuked', 'cancelled'].includes(mission.status);
@@ -167,6 +238,13 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
       ping: false,
     };
   }
+
+  // Determine styling for verification block based on level
+  const levelClass =
+    verification?.level === 0 ? 'border-success/20 bg-success/5' :
+    verification?.level === 1 ? 'border-warning/20 bg-warning/5' :
+    verification?.level === 2 ? 'border-warning/30 bg-warning/10' :
+    'border-error/30 bg-error/10';
 
   return (
     <div className="flex flex-col p-6 relative overflow-hidden bg-bg-secondary/40 rounded-xl">
@@ -290,15 +368,24 @@ export function MissionWallet({ onViewPolicies }: { onViewPolicies: () => void }
             </div>
           </div>
 
-          <div className="rounded-xl border border-success/20 bg-success/5 p-3.5 flex items-center gap-3">
+          {/* ✅ DYNAMIC VERIFICATION BLOCK – replaces static threshold */}
+          <div className={`rounded-xl border ${levelClass} p-3.5 flex items-center gap-3 transition-colors`}>
             <div className="h-8 w-8 rounded-full bg-success/10 flex items-center justify-center border border-success/20 text-success">
-              <ShieldCheck className="h-4 w-4" />
+              {verification?.level === 0 && <Check className="h-4 w-4" />}
+              {verification?.level === 1 && <KeyRound className="h-4 w-4" />}
+              {verification?.level === 2 && <PhoneCall className="h-4 w-4" />}
+              {verification?.level === 3 && <ShieldAlert className="h-4 w-4" />}
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-success/70 font-bold mb-0.5">Verification Rule</div>
-              <div className="text-[12px] font-bold text-white">
-                OTP over {formatINR(policy?.verificationThresholds?.otp || 0)}
+              <div className="text-[10px] uppercase tracking-widest text-success/70 font-bold mb-0.5">
+                Verification Rule
               </div>
+              <div className="text-[12px] font-bold text-white">
+                {verification?.label || 'Unknown'}
+              </div>
+              {verification?.description && (
+                <div className="text-[10px] text-ink-faint mt-0.5">{verification.description}</div>
+              )}
             </div>
           </div>
         </div>
