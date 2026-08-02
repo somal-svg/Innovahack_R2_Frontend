@@ -8,7 +8,6 @@ export type ShieldId =
   | 'timeLock'
   | 'circuitBreaker';
 
-// ✅ Mission statuses (including verification states)
 export type MissionStatus =
   | 'idle'
   | 'created'
@@ -24,7 +23,6 @@ export type MissionStatus =
 
 export type LogSeverity = 'info' | 'success' | 'warning' | 'error' | 'gold';
 
-// ✅ Category types (matches backend POLICY_LIBRARY keys)
 export type MissionCategory =
   | 'cloud'
   | 'saas'
@@ -70,9 +68,9 @@ export interface Mission {
   createdAt: number;
   userPrompt?: string;
   sessionKey: string;
-  // 👇 NEW: category and policy ID from the backend
-  category?: MissionCategory;   // e.g., 'cloud', 'saas'
-  policyId?: string;            // ID of the applied policy profile
+  category?: MissionCategory;
+  policyId?: string;
+  riskScore?: number;
 }
 
 export interface AuditEntry {
@@ -87,9 +85,24 @@ export interface AuditEntry {
 export interface Policy {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   enabled: boolean;
-  rule: string;
+  rule?: string;
+  category?: string;
+  icon?: string;
+  defaultBudget?: number;
+  dailyCeiling?: number;
+  allowedVendors?: string[];
+  verificationThresholds?: {
+    otp: number;
+    phone: number;
+    manual: number;
+  };
+  timelockSeconds?: number;
+  expiryHours?: number;
+  trustRequirement?: 'low' | 'medium' | 'high';
+  maxConsecutiveFailures?: number;
+  fallback?: 'manual_review' | 'reject';
 }
 
 export interface BankAccount {
@@ -114,7 +127,6 @@ export interface EnterpriseProfile {
   highestSpend: number;
 }
 
-// ✅ Verification state (used by VerificationPrompt)
 export interface VerificationState {
   active: boolean;
   missionId: string | null;
